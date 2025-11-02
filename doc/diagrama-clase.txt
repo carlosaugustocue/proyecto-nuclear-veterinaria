@@ -1,0 +1,2028 @@
+@startuml
+!define ABSTRACT abstract
+!define INTERFACE interface
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+skinparam backgroundColor #FEFEFE
+skinparam packageStyle rectangle
+
+' ===============================================================================
+' SISTEMA DE GESTIÓN VETERINARIA - DIAGRAMA DE CLASES COMPLETO
+' ===============================================================================
+
+package "Capa de Seguridad" #LightBlue {
+    
+    ' ========================================
+    ' AUTENTICACIÓN
+    ' ========================================
+    class ServicioAutenticacion {
+        - repositorioUsuarios: IRepositorioUsuario
+        - gestorSesiones: GestorSesiones
+        - gestorIntentosFallidos: GestorIntentosFallidos
+        - encriptador: EncriptadorContraseña
+        --
+        + login(email: String, password: String): TokenSesion
+        + logout(token: String): void
+        + validarToken(token: String): Usuario
+        + cambiarContraseña(usuario: Usuario, nuevaPassword: String): void
+        + recuperarContraseña(email: String): void
+    }
+    
+    class TokenSesion {
+        - token: String
+        - usuario: Usuario
+        - fechaCreacion: LocalDateTime
+        - fechaExpiracion: LocalDateTime
+        - dispositivoInfo: DispositivoInfo
+        --
+        + esValido(): boolean
+        + renovar(): void
+        + obtenerUsuario(): Usuario
+    }
+    
+    class GestorSesiones <<Singleton>> {
+        - instance: GestorSesiones
+        - sesionesActivas: Map<String, SesionActiva>
+        --
+        + getInstance(): GestorSesiones
+        + crearSesion(usuario: Usuario, ip: String): TokenSesion
+        + cerrarSesion(token: String): void
+        + validarSesion(token: String): boolean
+        + obtenerSesionesUsuario(usuario: Usuario): List<SesionActiva>
+        + cerrarOtrasSesiones(usuario: Usuario, tokenActual: String): void
+    }
+    
+    class SesionActiva {
+        - id: Long
+        - token: String
+        - usuario: Usuario
+        - direccionIP: String
+        - inicioSesion: LocalDateTime
+        - ultimaActividad: LocalDateTime
+        - activa: boolean
+        --
+        + renovar(): void
+        + cerrar(): void
+        + esExpirada(): boolean
+    }
+    
+    class GestorIntentosFallidos {
+        - intentosPorUsuario: Map<String, IntentosLogin>
+        - configuracion: ConfiguracionSistema
+        --
+        + registrarIntento(email: String, exitoso: boolean, ip: String): void
+        + estaBloqueado(email: String): boolean
+        + desbloquear(email: String): void
+        + reiniciarIntentos(email: String): void
+    }
+    
+    class IntentosLogin {
+        - email: String
+        - intentosFallidos: int
+        - ultimoIntento: LocalDateTime
+        - bloqueadoHasta: LocalDateTime
+        - historicoIntentos: List<RegistroIntento>
+        --
+        + incrementarFallos(): void
+        + bloquear(duracionMinutos: int): void
+        + estaBloqueado(): boolean
+        + reiniciar(): void
+    }
+    
+    class RegistroIntento {
+        - fechaHora: LocalDateTime
+        - direccionIP: String
+        - exitoso: boolean
+        - motivoFallo: String
+    }
+    
+    class EncriptadorContraseña {
+        + encriptar(password: String): String
+        + verificar(password: String, hash: String): boolean
+        + generarSalt(): String
+    }
+    
+    class DispositivoInfo {
+        - huella: String
+        - navegador: String
+        - sistemaOperativo: String
+        - ip: String
+        - ubicacionAproximada: String
+        --
+        + esConfiable(usuario: Usuario): boolean
+        + marcarComoConfiable(usuario: Usuario): void
+    }
+    
+    class DispositivoConfiable {
+        - id: Long
+        - usuario: Usuario
+        - huella: String
+        - nombreDispositivo: String
+        - fechaRegistro: LocalDateTime
+        --
+        + esConfiable(String): boolean
+    }
+    
+    ' ========================================
+    ' AUTORIZACIÓN
+    ' ========================================
+    class ServicioAutorizacion {
+        - repositorioPermisos: IRepositorioPermiso
+        - repositorioRoles: IRepositorioRol
+        - cache: CachePermisos
+        --
+        + tienePermiso(usuario: Usuario, permiso: String): boolean
+        + tieneRol(usuario: Usuario, rol: String): boolean
+        + tieneAlgunoDeEstosPermisos(usuario: Usuario, permisos: List<String>): boolean
+        + obtenerPermisosUsuario(usuario: Usuario): List<Permiso>
+        + validarAcceso(usuario: Usuario, recurso: String, accion: String): boolean
+    }
+    
+    class Rol {
+        - id: Long
+        - nombre: String
+        - descripcion: String
+        - permisos: List<Permiso>
+        - activo: boolean
+        --
+        + agregarPermiso(Permiso): void
+        + removerPermiso(Permiso): void
+        + tienePermiso(String): boolean
+    }
+    
+    class Permiso {
+        - id: Long
+        - codigo: String
+        - nombre: String
+        - modulo: String
+        - descripcion: String
+        --
+        + esIgualA(String): boolean
+    }
+    
+    class PermisosDelSistema {
+        + CITAS_CREAR: String
+        + CITAS_VER: String
+        + CITAS_EDITAR: String
+        + CITAS_CANCELAR: String
+        + HISTORIAL_VER: String
+        + HISTORIAL_CREAR: String
+        + HISTORIAL_EDITAR: String
+        + FACTURA_CREAR: String
+        + FACTURA_ANULAR: String
+        + INVENTARIO_VER: String
+        + INVENTARIO_INGRESAR: String
+        + INVENTARIO_DAR_BAJA: String
+        + USUARIOS_CREAR: String
+        + USUARIOS_EDITAR: String
+    }
+    
+    class CachePermisos {
+        - cache: Map<String, List<Permiso>>
+        - tiempoExpiracion: int
+        --
+        + obtener(usuario: Usuario): List<Permiso>
+        + guardar(usuario: Usuario, permisos: List<Permiso>): void
+        + invalidar(usuario: Usuario): void
+        + limpiar(): void
+    }
+    
+    ' ========================================
+    ' AUDITORÍA
+    ' ========================================
+    class AuditoriaAcceso {
+        - repositorioAuditoria: IRepositorioAuditoria
+        --
+        + registrarAcceso(registro: RegistroAuditoria): void
+        + registrarIntentoFallido(registro: RegistroAuditoria): void
+        + buscarPorUsuario(usuario: Usuario, fechaInicio: Date, fechaFin: Date): List<RegistroAuditoria>
+        + buscarAccesosNoAutorizados(): List<RegistroAuditoria>
+        + generarReporteAuditoria(criterios: Map): ReporteAuditoria
+    }
+    
+    class RegistroAuditoria {
+        - id: Long
+        - usuario: Usuario
+        - fechaHora: LocalDateTime
+        - accion: String
+        - modulo: String
+        - recurso: String
+        - resultado: ResultadoAccion
+        - direccionIP: String
+        - detalles: String
+        - duracionMs: long
+        --
+        + esAccesoNoAutorizado(): boolean
+        + esOperacionCritica(): boolean
+    }
+    
+    enum ResultadoAccion {
+        EXITOSO
+        DENEGADO_SIN_PERMISO
+        DENEGADO_SIN_AUTENTICACION
+        DENEGADO_BLOQUEADO
+        ERROR
+    }
+    
+    ' ========================================
+    ' INTERCEPTORES
+    ' ========================================
+    INTERFACE Interceptor {
+        + antesDeEjecutar(contexto: ContextoEjecucion): boolean
+        + despuesDeEjecutar(contexto: ContextoEjecucion, resultado: Object): void
+    }
+    
+    class InterceptorSeguridad {
+        - servicioAutenticacion: ServicioAutenticacion
+        - servicioAutorizacion: ServicioAutorizacion
+        - auditoriaAcceso: AuditoriaAcceso
+        --
+        + antesDeEjecutar(contexto: ContextoEjecucion): boolean
+        + despuesDeEjecutar(contexto: ContextoEjecucion, resultado: Object): void
+    }
+    
+    class ContextoEjecucion {
+        - token: String
+        - usuario: Usuario
+        - metodo: String
+        - parametros: Map<String, Object>
+        - permisosRequeridos: List<String>
+        - ip: String
+        --
+        + obtenerUsuario(): Usuario
+        + requierePermisos(List<String>): void
+    }
+    
+    ABSTRACT class ProxySeguro<T> {
+        # objetivo: T
+        # interceptor: InterceptorSeguridad
+        # permisosRequeridos: Map<String, List<String>>
+        --
+        # ejecutarConSeguridad(metodo: String, token: String, parametros: Map): Object
+        # validarAcceso(token: String, permisos: List<String>): Usuario
+    }
+}
+
+package "Capa de Dominio - Usuarios" #LightGreen {
+    
+    ' ========================================
+    ' VALUE OBJECTS
+    ' ========================================
+    class Email {
+        - valor: String
+        --
+        + Email(String)
+        + esValido(): boolean
+        + obtenerDominio(): String
+        + toString(): String
+    }
+    
+    class Telefono {
+        - numero: String
+        - codigoPais: String
+        --
+        + Telefono(String, String)
+        + formatear(): String
+        + toString(): String
+    }
+    
+    class Direccion {
+        - calle: String
+        - ciudad: String
+        - departamento: String
+        - codigoPostal: String
+        --
+        + obtenerDireccionCompleta(): String
+    }
+    
+    ' ========================================
+    ' USUARIOS
+    ' ========================================
+    ABSTRACT class Usuario {
+        # id: Long
+        # nombre: String
+        # apellido: String
+        # email: Email
+        # telefono: Telefono
+        # passwordHash: String
+        # roles: List<Rol>
+        # fechaRegistro: Date
+        # activo: boolean
+        --
+        + agregarRol(Rol): void
+        + removerRol(Rol): void
+        + tieneRol(String): boolean
+        + tienePermiso(String): boolean
+        + obtenerTodosLosPermisos(): List<Permiso>
+        + actualizarDatos(): void
+        + getNombreCompleto(): String
+    }
+    
+    class Veterinario extends Usuario {
+        - numeroLicencia: String
+        - especialidad: String
+        - horarioAtencion: String
+        - fotoPerfil: String
+    }
+    
+    class Recepcionista extends Usuario {
+        - turno: String
+        - extension: String
+    }
+    
+    class Administrador extends Usuario {
+        - nivelAcceso: int
+    }
+    
+    class Cliente extends Usuario {
+        - direccion: Direccion
+        - numeroMascotas: int
+        - categoria: CategoriaCliente
+        - fechaUltimaVisita: Date
+        --
+        + esClienteFrecuente(): boolean
+        + esClienteInactivo(meses: int): boolean
+    }
+    
+    enum CategoriaCliente {
+        NUEVO
+        FRECUENTE
+        VIP
+        INACTIVO
+    }
+    
+    ' ========================================
+    ' FACTORY METHOD USUARIOS
+    ' ========================================
+    ABSTRACT class FactoryUsuario <<Factory Method>> {
+        {abstract} + crearUsuario(tipo: String, datos: Map): Usuario
+    }
+    
+    class FactoryUsuarioConcreto extends FactoryUsuario {
+        + crearUsuario(tipo: String, datos: Map): Usuario
+    }
+}
+
+package "Capa de Dominio - Mascotas y Pacientes" #LightYellow {
+    
+    ' ========================================
+    ' MASCOTAS
+    ' ========================================
+    ABSTRACT class Mascota {
+        # id: Long
+        # nombre: String
+        # fechaNacimiento: Date
+        # raza: String
+        # peso: double
+        # color: String
+        # sexo: Sexo
+        # esterilizado: boolean
+        # microchip: String
+        # propietario: Cliente
+        # estado: EstadoPaciente
+        # fotoPerfil: String
+        --
+        + calcularEdad(): int
+        + actualizarDatos(): void
+        + actualizarPeso(double): void
+        {abstract} + obtenerTipoAnimal(): String
+    }
+    
+    class Perro extends Mascota {
+        - tamaño: TamañoPerro
+        - nivelActividad: String
+        --
+        + obtenerTipoAnimal(): String
+    }
+    
+    class Gato extends Mascota {
+        - esIndoor: boolean
+        - declawed: boolean
+        --
+        + obtenerTipoAnimal(): String
+    }
+    
+    class Ave extends Mascota {
+        - puedeVolar: boolean
+        - tipoPico: String
+        --
+        + obtenerTipoAnimal(): String
+    }
+    
+    class Reptil extends Mascota {
+        - tipoEscamas: String
+        - temperaturaOptima: double
+        --
+        + obtenerTipoAnimal(): String
+    }
+    
+    enum Sexo {
+        MACHO
+        HEMBRA
+    }
+    
+    enum TamañoPerro {
+        PEQUEÑO
+        MEDIANO
+        GRANDE
+        GIGANTE
+    }
+    
+    enum EstadoPaciente {
+        ACTIVO
+        INACTIVO
+        FALLECIDO
+    }
+    
+    ' ========================================
+    ' FACTORY METHOD MASCOTAS
+    ' ========================================
+    ABSTRACT class FactoryMascota <<Factory Method>> {
+        {abstract} + crearMascota(tipo: String, datos: Map): Mascota
+    }
+    
+    class FactoryMascotaConcreto extends FactoryMascota {
+        + crearMascota(tipo: String, datos: Map): Mascota
+    }
+    
+    ' ========================================
+    ' CATÁLOGO DE ESPECIES Y RAZAS
+    ' ========================================
+    class Especie {
+        - id: Long
+        - nombre: String
+        - razas: List<Raza>
+        - activo: boolean
+        --
+        + agregarRaza(Raza): void
+        + obtenerRazas(): List<Raza>
+    }
+    
+    class Raza {
+        - id: Long
+        - nombre: String
+        - especie: Especie
+        - caracteristicas: String
+        - activo: boolean
+    }
+}
+
+package "Capa de Dominio - Citas y Agenda" #LightCoral {
+    
+    ' ========================================
+    ' CITAS
+    ' ========================================
+    class Cita {
+        - id: Long
+        - fecha: Date
+        - hora: Time
+        - motivo: String
+        - estado: EstadoCita
+        - veterinario: Veterinario
+        - paciente: Mascota
+        - cliente: Cliente
+        - tipoServicio: TipoServicio
+        - notas: String
+        - duracionEstimada: int
+        --
+        + cambiarEstado(EstadoCita): void
+        + confirmar(): void
+        + cancelar(motivo: String): void
+        + completar(): void
+        + reagendar(nuevaFecha: Date, nuevaHora: Time): void
+        + obtenerDetalles(): String
+    }
+    
+    class TipoServicio {
+        - id: Long
+        - nombre: String
+        - descripcion: String
+        - duracionEstimada: int
+        - precioBase: double
+        - categoria: String
+        - activo: boolean
+    }
+    
+    ' ========================================
+    ' STATE PATTERN PARA CITAS
+    ' ========================================
+    INTERFACE EstadoCita <<State>> {
+        + manejar(Cita): void
+        + puedeTransicionarA(EstadoCita): boolean
+        + siguienteEstado(): EstadoCita
+    }
+    
+    class EstadoProgramada {
+        + manejar(Cita): void
+        + puedeTransicionarA(EstadoCita): boolean
+        + siguienteEstado(): EstadoCita
+    }
+    
+    class EstadoConfirmada {
+        + manejar(Cita): void
+        + puedeTransicionarA(EstadoCita): boolean
+        + siguienteEstado(): EstadoCita
+    }
+    
+    class EstadoEnProgreso {
+        + manejar(Cita): void
+        + puedeTransicionarA(EstadoCita): boolean
+        + siguienteEstado(): EstadoCita
+    }
+    
+    class EstadoCompletada {
+        + manejar(Cita): void
+        + puedeTransicionarA(EstadoCita): boolean
+        + siguienteEstado(): EstadoCita
+    }
+    
+    class EstadoCancelada {
+        - motivo: String
+        --
+        + manejar(Cita): void
+        + puedeTransicionarA(EstadoCita): boolean
+        + siguienteEstado(): EstadoCita
+    }
+    
+    ' ========================================
+    ' VALIDADORES
+    ' ========================================
+    class ValidadorDisponibilidad {
+        - repositorioCitas: IRepositorioCita
+        - configuracion: ConfiguracionSistema
+        --
+        + verificarDisponibilidadVeterinario(vet: Veterinario, fecha: Date): boolean
+        + verificarHorarioHabil(fecha: Date): boolean
+        + verificarConflictos(vet: Veterinario, fecha: Date): List<Cita>
+        + obtenerHorariosDisponibles(vet: Veterinario, fecha: Date): List<String>
+    }
+}
+
+package "Capa de Dominio - Historia Clínica" #Lavender {
+    
+    ' ========================================
+    ' VALUE OBJECTS CLÍNICOS
+    ' ========================================
+    class SignosVitales {
+        - temperatura: double
+        - pulso: int
+        - frecuenciaRespiratoria: int
+        - peso: double
+        - presionArterial: String
+        --
+        + estaDentroRangoNormal(): boolean
+        + calcularNivelPrioridad(): NivelPrioridad
+    }
+    
+    enum NivelPrioridad {
+        BAJO
+        MEDIO
+        ALTO
+        CRITICO
+    }
+    
+    ' ========================================
+    ' HISTORIAL CLÍNICO
+    ' ========================================
+    class HistorialClinico {
+        - id: Long
+        - paciente: Mascota
+        - consultas: List<Consulta>
+        - vacunas: List<Vacuna>
+        - examenes: List<Examen>
+        - tratamientos: List<Tratamiento>
+        - alergias: List<String>
+        - condicionesCronicas: List<String>
+        - fechaCreacion: Date
+        - ultimaActualizacion: Date
+        --
+        + obtenerResumen(): String
+        + obtenerUltimasConsultas(cantidad: int): List<Consulta>
+    }
+    
+    ' ========================================
+    ' BUILDER PATTERN
+    ' ========================================
+    class BuilderHistorial <<Builder>> {
+        - historial: HistorialClinico
+        --
+        + reset(): void
+        + conPaciente(Mascota): BuilderHistorial
+        + conConsulta(Consulta): BuilderHistorial
+        + conVacuna(Vacuna): BuilderHistorial
+        + conExamen(Examen): BuilderHistorial
+        + conTratamiento(Tratamiento): BuilderHistorial
+        + conAlergia(String): BuilderHistorial
+        + construir(): HistorialClinico
+    }
+    
+    ' ========================================
+    ' CONSULTA
+    ' ========================================
+    class Consulta {
+        - id: Long
+        - fecha: Date
+        - motivo: String
+        - diagnostico: String
+        - tratamiento: String
+        - observaciones: String
+        - veterinario: Veterinario
+        - paciente: Mascota
+        - cita: Cita
+        - signosVitales: SignosVitales
+        - archivosAdjuntos: List<ArchivoClinico>
+        - receta: Receta
+        --
+        + registrar(): void
+        + actualizar(): void
+        + finalizar(): void
+    }
+    
+    class Vacuna {
+        - id: Long
+        - nombre: String
+        - fecha: Date
+        - lote: String
+        - veterinario: Veterinario
+        - proximaDosis: Date
+        - laboratorio: String
+        - observaciones: String
+    }
+    
+    class Examen {
+        - id: Long
+        - tipo: String
+        - fecha: Date
+        - resultado: String
+        - valorReferencia: String
+        - archivosAdjuntos: List<ArchivoClinico>
+        - veterinario: Veterinario
+        - observaciones: String
+    }
+    
+    class Tratamiento {
+        - id: Long
+        - descripcion: String
+        - fechaInicio: Date
+        - fechaFin: Date
+        - medicamentos: List<Medicamento>
+        - duracion: int
+        - estado: EstadoTratamiento
+        - veterinario: Veterinario
+        - notas: String
+        --
+        + estaConcluido(): boolean
+        + agregarMedicamento(Medicamento): void
+    }
+    
+    enum EstadoTratamiento {
+        EN_CURSO
+        SUSPENDIDO
+        COMPLETADO
+        CANCELADO
+    }
+    
+    class Receta {
+        - id: Long
+        - consulta: Consulta
+        - medicamentos: List<PrescripcionMedicamento>
+        - indicaciones: String
+        - veterinario: Veterinario
+        - fecha: Date
+        --
+        + generarPDF(): File
+    }
+    
+    class PrescripcionMedicamento {
+        - medicamento: Medicamento
+        - dosis: String
+        - frecuencia: String
+        - duracion: int
+        - viaAdministracion: String
+        - indicaciones: String
+    }
+    
+    class ArchivoClinico {
+        - id: Long
+        - nombre: String
+        - tipo: TipoArchivo
+        - ruta: String
+        - fecha: Date
+        - usuario: Usuario
+        - firmaDigital: String
+    }
+    
+    enum TipoArchivo {
+        RADIOGRAFIA
+        ECOGRAFIA
+        ANALISIS_SANGRE
+        IMAGEN
+        PDF
+        OTRO
+    }
+    
+    ' ========================================
+    ' TEMPLATE METHOD PARA CONSULTAS
+    ' ========================================
+    ABSTRACT class ProcesoConsulta <<Template Method>> {
+        # consulta: Consulta
+        --
+        + ejecutarConsulta(): void
+        # registrarLlegada(): void
+        # realizarTriaje(): void
+        # realizarExamenFisico(): void
+        {abstract} # realizarProcedimientoEspecifico(): void
+        # prescribirTratamiento(): void
+        # generarReceta(): void
+        # actualizarHistorial(): void
+        # finalizarConsulta(): void
+    }
+    
+    class ConsultaGeneral extends ProcesoConsulta {
+        # realizarProcedimientoEspecifico(): void
+    }
+    
+    class ConsultaEmergencia extends ProcesoConsulta {
+        - nivelUrgencia: NivelPrioridad
+        --
+        # realizarProcedimientoEspecifico(): void
+    }
+    
+    class ConsultaEspecializada extends ProcesoConsulta {
+        - especialidad: String
+        --
+        # realizarProcedimientoEspecifico(): void
+    }
+    
+    ' ========================================
+    ' CONSENTIMIENTO CLÍNICO
+    ' ========================================
+    class ConsentimientoClinico {
+        - id: Long
+        - procedimiento: String
+        - cliente: Cliente
+        - paciente: Mascota
+        - firmaDigital: String
+        - fechaHora: LocalDateTime
+        - documento: File
+        - aceptado: boolean
+        - veterinario: Veterinario
+        --
+        + firmar(): void
+        + generarDocumento(): File
+    }
+    
+    ' ========================================
+    ' TRIAGE
+    ' ========================================
+    class Triage {
+        - id: Long
+        - paciente: Mascota
+        - fecha: LocalDateTime
+        - signosVitales: SignosVitales
+        - nivelConciencia: NivelConciencia
+        - estadoGeneral: String
+        - prioridad: NivelPrioridad
+        - responsable: Usuario
+        --
+        + calcularPrioridad(): NivelPrioridad
+    }
+    
+    enum NivelConciencia {
+        ALERTA
+        SOMNOLIENTO
+        ESTUPOROSO
+        COMATOSO
+    }
+}
+
+package "Capa de Dominio - Inventario y Productos" #LightCyan {
+    
+    ' ========================================
+    ' COMPOSITE PATTERN PARA INVENTARIO
+    ' ========================================
+    ABSTRACT class ComponenteInventario <<Composite>> {
+        # nombre: String
+        # codigo: String
+        --
+        {abstract} + obtenerCantidad(): int
+        {abstract} + agregar(ComponenteInventario): void
+        {abstract} + eliminar(ComponenteInventario): void
+        + mostrarInfo(): String
+    }
+    
+    class ProductoInventario extends ComponenteInventario {
+        - id: Long
+        - cantidad: int
+        - precioUnitario: double
+        - precioVenta: double
+        - stockMinimo: int
+        - categoria: CategoriaProducto
+        - activo: boolean
+        - requiereReceta: boolean
+        --
+        + obtenerCantidad(): int
+        + agregar(ComponenteInventario): void
+        + eliminar(ComponenteInventario): void
+        + actualizarStock(cantidad: int, tipo: TipoMovimiento): void
+        + estaBajoStockMinimo(): boolean
+    }
+    
+    class CategoriaInventario extends ComponenteInventario {
+        - productos: List<ComponenteInventario>
+        --
+        + obtenerCantidad(): int
+        + agregar(ComponenteInventario): void
+        + eliminar(ComponenteInventario): void
+        + obtenerProductos(): List<ComponenteInventario>
+    }
+    
+    enum CategoriaProducto {
+        MEDICAMENTO
+        ALIMENTO
+        ACCESORIO
+        VACUNA
+        INSUMO_MEDICO
+        PRODUCTO_HIGIENE
+    }
+    
+    ' ========================================
+    ' GESTIÓN DE LOTES
+    ' ========================================
+    class Lote {
+        - id: Long
+        - numero: String
+        - producto: ProductoInventario
+        - cantidad: int
+        - fechaIngreso: Date
+        - fechaVencimiento: Date
+        - proveedor: Proveedor
+        - codigoICA: String
+        - precioCompra: double
+        - activo: boolean
+        --
+        + estaVencido(): boolean
+        + estaProximoAVencer(dias: int): boolean
+        + descontar(cantidad: int): void
+    }
+    
+    class Proveedor {
+        - id: Long
+        - nombre: String
+        - nit: String
+        - contacto: String
+        - email: Email
+        - telefono: Telefono
+        - direccion: Direccion
+        - activo: boolean
+        --
+        + actualizarInformacion(): void
+    }
+    
+    ' ========================================
+    ' MOVIMIENTOS DE INVENTARIO
+    ' ========================================
+    class MovimientoInventario {
+        - id: Long
+        - producto: ProductoInventario
+        - lote: Lote
+        - tipo: TipoMovimiento
+        - cantidad: int
+        - usuario: Usuario
+        - fecha: LocalDateTime
+        - motivoDetalle: String
+        - cita: Cita
+        --
+        + registrar(): void
+    }
+    
+    enum TipoMovimiento {
+        INGRESO
+        SALIDA
+        AJUSTE
+        BAJA
+        VENCIMIENTO
+        ASIGNACION_PACIENTE
+    }
+    
+    ' ========================================
+    ' MEDICAMENTOS
+    ' ========================================
+    class Medicamento extends ProductoInventario {
+        - principioActivo: String
+        - concentracion: String
+        - viaAdministracion: String
+        - presentacion: String
+        - registroSanitario: String
+        --
+        + obtenerInformacion(): String
+    }
+}
+
+package "Capa de Dominio - Facturación" #PeachPuff {
+    
+    ' ========================================
+    ' FACTURACIÓN
+    ' ========================================
+    class Factura {
+        - id: Long
+        - numero: String
+        - fecha: Date
+        - cliente: Cliente
+        - cita: Cita
+        - items: List<ItemFactura>
+        - subtotal: double
+        - descuento: double
+        - impuestos: double
+        - total: double
+        - estado: EstadoFactura
+        - metodoPago: MetodoPago
+        - estrategiaPrecio: EstrategiaPrecio
+        - observaciones: String
+        --
+        + agregarItem(ItemFactura): void
+        + calcularTotal(): double
+        + aplicarDescuento(double): void
+        + anular(motivo: String): void
+    }
+    
+    class ItemFactura {
+        - id: Long
+        - descripcion: String
+        - cantidad: int
+        - precioUnitario: double
+        - subtotal: double
+        - impuesto: double
+        - descuento: double
+        - servicio: ServicioVeterinario
+        - producto: ProductoInventario
+        --
+        + calcularSubtotal(): double
+    }
+    
+    enum EstadoFactura {
+        BORRADOR
+        EMITIDA
+        PAGADA
+        ANULADA
+        VENCIDA
+    }
+    
+    enum MetodoPago {
+        EFECTIVO
+        TARJETA_DEBITO
+        TARJETA_CREDITO
+        TRANSFERENCIA
+        MULTIPLE
+    }
+    
+    ' ========================================
+    ' STRATEGY PATTERN PARA PRECIOS
+    ' ========================================
+    INTERFACE EstrategiaPrecio <<Strategy>> {
+        + calcularPrecio(ServicioVeterinario): double
+        + aplicarDescuento(monto: double, tipoDescuento: TipoDescuento): double
+    }
+    
+    class PrecioNormal {
+        + calcularPrecio(ServicioVeterinario): double
+        + aplicarDescuento(monto: double, tipoDescuento: TipoDescuento): double
+    }
+    
+    class PrecioClienteVIP {
+        - descuentoBase: double
+        --
+        + calcularPrecio(ServicioVeterinario): double
+        + aplicarDescuento(monto: double, tipoDescuento: TipoDescuento): double
+    }
+    
+    class PrecioPromocion {
+        - fechaInicio: Date
+        - fechaFin: Date
+        - descuento: double
+        --
+        + calcularPrecio(ServicioVeterinario): double
+        + aplicarDescuento(monto: double, tipoDescuento: TipoDescuento): double
+    }
+    
+    class PrecioPorVolumen {
+        - umbralCantidad: int
+        - descuentoPorVolumen: double
+        --
+        + calcularPrecio(ServicioVeterinario): double
+        + aplicarDescuento(monto: double, tipoDescuento: TipoDescuento): double
+    }
+    
+    enum TipoDescuento {
+        PORCENTAJE
+        MONTO_FIJO
+        CLIENTE_FRECUENTE
+        PROMOCION
+        CORTESIA
+    }
+    
+    ' ========================================
+    ' DECORATOR PATTERN PARA SERVICIOS
+    ' ========================================
+    INTERFACE ServicioVeterinario {
+        + ejecutar(): void
+        + calcularCosto(): double
+        + obtenerDescripcion(): String
+    }
+    
+    class ServicioBase {
+        - nombre: String
+        - costoBase: double
+        - tipoServicio: TipoServicio
+        --
+        + ejecutar(): void
+        + calcularCosto(): double
+        + obtenerDescripcion(): String
+    }
+    
+    ABSTRACT class DecoradorServicio {
+        # servicioBase: ServicioVeterinario
+        --
+        + DecoradorServicio(ServicioVeterinario)
+        + ejecutar(): void
+        + calcularCosto(): double
+        + obtenerDescripcion(): String
+    }
+    
+    class DecoradorUrgencia extends DecoradorServicio {
+        - recargoUrgencia: double
+        --
+        + calcularCosto(): double
+        + obtenerDescripcion(): String
+    }
+    
+    class DecoradorDomicilio extends DecoradorServicio {
+        - costoTransporte: double
+        - distanciaKm: double
+        --
+        + calcularCosto(): double
+        + obtenerDescripcion(): String
+    }
+    
+    class DecoradorHorarioNocturno extends DecoradorServicio {
+        - recargoNocturno: double
+        --
+        + calcularCosto(): double
+        + obtenerDescripcion(): String
+    }
+    
+    class DecoradorConEspecialista extends DecoradorServicio {
+        - tarifaEspecialista: double
+        - especialidad: String
+        --
+        + calcularCosto(): double
+        + obtenerDescripcion(): String
+    }
+    
+    ' ========================================
+    ' GENERACIÓN DE DOCUMENTOS
+    ' ========================================
+    class GeneradorFactura {
+        - configuracion: ConfiguracionSistema
+        --
+        + generarPDF(factura: Factura): File
+        + generarXML(factura: Factura): File
+        + enviarPorEmail(factura: Factura, email: String): void
+    }
+}
+
+package "Capa de Dominio - Seguimiento y Fidelización" #MistyRose {
+    
+    ' ========================================
+    ' SEGUIMIENTO
+    ' ========================================
+    class Seguimiento {
+        - id: Long
+        - paciente: Mascota
+        - fecha: Date
+        - motivo: String
+        - medioContacto: MedioContacto
+        - observaciones: String
+        - proximaRevision: Date
+        - responsable: Usuario
+        - completado: boolean
+        --
+        + marcarComoCompletado(): void
+        + reagendar(nuevaFecha: Date): void
+    }
+    
+    enum MedioContacto {
+        TELEFONO
+        EMAIL
+        WHATSAPP
+        PRESENCIAL
+        SMS
+    }
+    
+    ' ========================================
+    ' CAMPAÑAS
+    ' ========================================
+    class Campana {
+        - id: Long
+        - nombre: String
+        - descripcion: String
+        - fechaEnvio: Date
+        - publicoObjetivo: List<Cliente>
+        - mensaje: String
+        - canal: CanalComunicacion
+        - estadisticas: EstadisticasCampana
+        - activa: boolean
+        --
+        + programar(): void
+        + enviar(): void
+        + obtenerEstadisticas(): EstadisticasCampana
+    }
+    
+    class EstadisticasCampana {
+        - enviados: int
+        - entregados: int
+        - abiertos: int
+        - respondidos: int
+        - fallidos: int
+        --
+        + calcularTasaApertura(): double
+        + calcularTasaRespuesta(): double
+    }
+    
+    enum CanalComunicacion {
+        EMAIL
+        SMS
+        WHATSAPP
+        NOTIFICACION_APP
+    }
+    
+    ' ========================================
+    ' ENCUESTAS
+    ' ========================================
+    class Encuesta {
+        - id: Long
+        - titulo: String
+        - descripcion: String
+        - preguntas: List<Pregunta>
+        - cliente: Cliente
+        - cita: Cita
+        - fechaEnvio: Date
+        - fechaRespuesta: Date
+        - puntuacion: int
+        - comentarios: String
+        --
+        + enviar(): void
+        + calcularPuntuacionPromedio(): double
+    }
+    
+    class Pregunta {
+        - id: Long
+        - texto: String
+        - tipo: TipoPregunta
+        - opciones: List<String>
+        - respuesta: String
+        - obligatoria: boolean
+    }
+    
+    enum TipoPregunta {
+        OPCION_MULTIPLE
+        TEXTO_LIBRE
+        ESCALA_NUMERICA
+        SI_NO
+    }
+    
+    ' ========================================
+    ' INTERACCIONES
+    ' ========================================
+    class InteraccionCliente {
+        - id: Long
+        - cliente: Cliente
+        - tipo: TipoInteraccion
+        - fechaHora: LocalDateTime
+        - responsable: Usuario
+        - detalle: String
+        - resultado: String
+        --
+        + registrar(): void
+    }
+    
+    enum TipoInteraccion {
+        LLAMADA_ENTRANTE
+        LLAMADA_SALIENTE
+        EMAIL
+        WHATSAPP
+        VISITA
+        RECLAMO
+        CONSULTA
+    }
+}
+
+package "Capa de Dominio - Notificaciones y Eventos" #Honeydew {
+    
+    ' ========================================
+    ' OBSERVER PATTERN MEJORADO
+    ' ========================================
+    INTERFACE Evento {
+        + getTipo(): TipoEvento
+        + getFechaHora(): LocalDateTime
+        + getOrigen(): Object
+        + getDatos(): Map<String, Object>
+    }
+    
+    class EventoCita {
+        - cita: Cita
+        - tipoEvento: TipoEventoCita
+        - fechaHora: LocalDateTime
+        --
+        + getTipo(): TipoEvento
+        + getFechaHora(): LocalDateTime
+        + getOrigen(): Object
+        + getDatos(): Map<String, Object>
+    }
+    
+    class EventoInventario {
+        - producto: ProductoInventario
+        - tipoEvento: TipoEventoInventario
+        - fechaHora: LocalDateTime
+        --
+        + getTipo(): TipoEvento
+        + getFechaHora(): LocalDateTime
+        + getOrigen(): Object
+        + getDatos(): Map<String, Object>
+    }
+    
+    class EventoRecordatorio {
+        - paciente: Mascota
+        - tipoRecordatorio: TipoRecordatorio
+        - fechaHora: LocalDateTime
+        --
+        + getTipo(): TipoEvento
+        + getFechaHora(): LocalDateTime
+        + getOrigen(): Object
+        + getDatos(): Map<String, Object>
+    }
+    
+    enum TipoEvento {
+        CITA
+        INVENTARIO
+        RECORDATORIO
+        FACTURA
+        USUARIO
+    }
+    
+    enum TipoEventoCita {
+        PROGRAMADA
+        CONFIRMADA
+        CANCELADA
+        REAGENDADA
+        COMPLETADA
+    }
+    
+    enum TipoEventoInventario {
+        STOCK_BAJO
+        PRODUCTO_VENCIDO
+        INGRESO_STOCK
+        SALIDA_STOCK
+    }
+    
+    enum TipoRecordatorio {
+        VACUNACION
+        DESPARASITACION
+        CITA_CONTROL
+        MEDICACION
+    }
+    
+    INTERFACE ObservadorEvento<T extends Evento> {
+        + notificar(T): void
+        + obtenerTipoEvento(): TipoEvento
+    }
+    
+    class GestorEventos <<Singleton>> {
+        - instance: GestorEventos
+        - observadores: Map<TipoEvento, List<ObservadorEvento>>
+        --
+        + getInstance(): GestorEventos
+        + suscribir(TipoEvento, ObservadorEvento): void
+        + desuscribir(TipoEvento, ObservadorEvento): void
+        + publicar(Evento): void
+    }
+    
+    ' ========================================
+    ' OBSERVADORES ESPECÍFICOS
+    ' ========================================
+    class NotificadorCita {
+        - adaptadorNotificacion: AdaptadorNotificacion
+        --
+        + notificar(EventoCita): void
+        + obtenerTipoEvento(): TipoEvento
+    }
+    
+    class NotificadorStockBajo {
+        - gestorInventario: GestorInventario
+        - adaptadorEmail: AdaptadorEmail
+        --
+        + notificar(EventoInventario): void
+        + obtenerTipoEvento(): TipoEvento
+    }
+    
+    class NotificadorVacunacion {
+        - adaptadorNotificacion: AdaptadorNotificacion
+        --
+        + notificar(EventoRecordatorio): void
+        + obtenerTipoEvento(): TipoEvento
+    }
+    
+    ' ========================================
+    ' ADAPTER PATTERN PARA NOTIFICACIONES
+    ' ========================================
+    INTERFACE AdaptadorNotificacion <<Adapter>> {
+        + enviar(destinatario: String, asunto: String, contenido: String, canal: CanalComunicacion): boolean
+    }
+    
+    class AdaptadorEmail {
+        - servicioExterno: ServicioEmailExterno
+        --
+        + enviar(destinatario: String, asunto: String, contenido: String, canal: CanalComunicacion): boolean
+    }
+    
+    class AdaptadorSMS {
+        - servicioExterno: ServicioSMSExterno
+        --
+        + enviar(destinatario: String, asunto: String, contenido: String, canal: CanalComunicacion): boolean
+    }
+    
+    class AdaptadorWhatsApp {
+        - servicioExterno: ServicioWhatsAppExterno
+        --
+        + enviar(destinatario: String, asunto: String, contenido: String, canal: CanalComunicacion): boolean
+    }
+    
+    ' Servicios externos
+    class ServicioEmailExterno {
+        + send(to: String, subject: String, body: String): void
+    }
+    
+    class ServicioSMSExterno {
+        + sendSMS(phoneNumber: String, message: String): boolean
+    }
+    
+    class ServicioWhatsAppExterno {
+        + sendMessage(phoneNumber: String, message: String): boolean
+    }
+    
+    class Notificacion {
+        - id: Long
+        - destinatario: String
+        - asunto: String
+        - contenido: String
+        - canal: CanalComunicacion
+        - fecha: LocalDateTime
+        - enviada: boolean
+        - leida: boolean
+        --
+        + marcarComoEnviada(): void
+        + marcarComoLeida(): void
+    }
+}
+
+package "Capa de Aplicación - Repositorios (Interfaces)" #WhiteSmoke {
+    
+    ' ========================================
+    ' REPOSITORY PATTERN
+    ' ========================================
+    INTERFACE IRepositorio<T> {
+        + guardar(T): void
+        + actualizar(T): void
+        + eliminar(Long): void
+        + buscarPorId(Long): T
+        + buscarTodos(): List<T>
+    }
+    
+    INTERFACE IRepositorioUsuario {
+        + buscarPorEmail(String): Usuario
+        + buscarPorRol(String): List<Usuario>
+        + existeEmail(String): boolean
+    }
+    
+    INTERFACE IRepositorioCita {
+        + buscarPorFecha(Date): List<Cita>
+        + buscarPorVeterinario(Veterinario, Date): List<Cita>
+        + buscarPorEstado(EstadoCita): List<Cita>
+        + buscarPorCliente(Cliente): List<Cita>
+        + buscarPorPaciente(Mascota): List<Cita>
+    }
+    
+    INTERFACE IRepositorioMascota {
+        + buscarPorPropietario(Cliente): List<Mascota>
+        + buscarPorEspecie(String): List<Mascota>
+        + buscarPorEstado(EstadoPaciente): List<Mascota>
+    }
+    
+    INTERFACE IRepositorioHistorial {
+        + buscarPorPaciente(Mascota): HistorialClinico
+        + buscarConsultasRecientes(Mascota, int): List<Consulta>
+    }
+    
+    INTERFACE IRepositorioInventario {
+        + buscarPorVencimiento(Date): List<ProductoInventario>
+        + buscarBajoStockMinimo(): List<ProductoInventario>
+        + buscarPorCategoria(CategoriaProducto): List<ProductoInventario>
+        + buscarPorLote(String): Lote
+    }
+    
+    INTERFACE IRepositorioFactura {
+        + buscarPorCliente(Cliente): List<Factura>
+        + buscarPorFecha(Date, Date): List<Factura>
+        + buscarPorEstado(EstadoFactura): List<Factura>
+        + obtenerReporteVentas(Date, Date): ReporteVentas
+    }
+    
+    INTERFACE IRepositorioRol {
+        + buscarPorNombre(String): Rol
+        + buscarActivos(): List<Rol>
+    }
+    
+    INTERFACE IRepositorioPermiso {
+        + buscarPorCodigo(String): Permiso
+        + buscarPorModulo(String): List<Permiso>
+    }
+    
+    INTERFACE IRepositorioAuditoria {
+        + buscarPorUsuario(Usuario, Date, Date): List<RegistroAuditoria>
+        + buscarPorAccion(String): List<RegistroAuditoria>
+        + buscarAccesosNoAutorizados(): List<RegistroAuditoria>
+    }
+}
+
+package "Capa de Aplicación - Servicios de Negocio" #AliceBlue {
+    
+    ' ========================================
+    ' SERVICIOS PRINCIPALES
+    ' ========================================
+    class ServicioCitas {
+        - repositorioCitas: IRepositorioCita
+        - validadorDisponibilidad: ValidadorDisponibilidad
+        - gestorEventos: GestorEventos
+        - auditoriaAcceso: AuditoriaAcceso
+        --
+        + programarCita(token: String, datosCita: Map): Cita
+        + reagendarCita(token: String, citaId: Long, nuevaFecha: Date): void
+        + cancelarCita(token: String, citaId: Long, motivo: String): void
+        + confirmarCita(token: String, citaId: Long): void
+        + completarCita(token: String, citaId: Long): void
+        + buscarCitasPorVeterinario(token: String, veterinario: Veterinario, fecha: Date): List<Cita>
+    }
+    
+    class ServicioHistorialClinico {
+        - repositorioHistorial: IRepositorioHistorial
+        - builderHistorial: BuilderHistorial
+        - auditoriaAcceso: AuditoriaAcceso
+        --
+        + crearHistorial(token: String, paciente: Mascota): HistorialClinico
+        + agregarConsulta(token: String, historialId: Long, consulta: Consulta): void
+        + agregarVacuna(token: String, historialId: Long, vacuna: Vacuna): void
+        + agregarExamen(token: String, historialId: Long, examen: Examen): void
+        + obtenerHistorialCompleto(token: String, paciente: Mascota): HistorialClinico
+        + generarReportePDF(token: String, historialId: Long): File
+    }
+    
+    class ServicioInventario {
+        - repositorioInventario: IRepositorioInventario
+        - gestorEventos: GestorEventos
+        - auditoriaAcceso: AuditoriaAcceso
+        --
+        + registrarIngreso(token: String, lote: Lote): void
+        + registrarSalida(token: String, productoId: Long, cantidad: int, motivo: String): void
+        + registrarBaja(token: String, productoId: Long, cantidad: int, motivo: String): void
+        + verificarStock(producto: ProductoInventario): int
+        + obtenerProductosProximosAVencer(dias: int): List<ProductoInventario>
+        + asignarMedicamentoAPaciente(token: String, paciente: Mascota, medicamento: Medicamento, cantidad: int): void
+    }
+    
+    class ServicioFacturacion {
+        - repositorioFacturas: IRepositorioFactura
+        - estrategiaPrecio: EstrategiaPrecio
+        - generadorFactura: GeneradorFactura
+        - auditoriaAcceso: AuditoriaAcceso
+        --
+        + crearFactura(token: String, cliente: Cliente, items: List<ItemFactura>): Factura
+        + aplicarDescuento(token: String, facturaId: Long, descuento: double): void
+        + procesarPago(token: String, facturaId: Long, metodoPago: MetodoPago): boolean
+        + anularFactura(token: String, facturaId: Long, motivo: String): void
+        + generarReporteVentas(token: String, fechaInicio: Date, fechaFin: Date): ReporteVentas
+    }
+    
+    class ServicioUsuarios {
+        - repositorioUsuarios: IRepositorioUsuario
+        - factoryUsuario: FactoryUsuario
+        - encriptador: EncriptadorContraseña
+        - auditoriaAcceso: AuditoriaAcceso
+        --
+        + crearUsuario(token: String, tipo: String, datos: Map): Usuario
+        + actualizarUsuario(token: String, usuarioId: Long, datos: Map): void
+        + desactivarUsuario(token: String, usuarioId: Long): void
+        + asignarRol(token: String, usuarioId: Long, rol: Rol): void
+        + removerRol(token: String, usuarioId: Long, rol: Rol): void
+    }
+    
+    class ServicioPacientes {
+        - repositorioMascotas: IRepositorioMascota
+        - factoryMascota: FactoryMascota
+        - auditoriaAcceso: AuditoriaAcceso
+        --
+        + registrarMascota(token: String, tipo: String, datos: Map): Mascota
+        + actualizarMascota(token: String, mascotaId: Long, datos: Map): void
+        + cambiarEstado(token: String, mascotaId: Long, estado: EstadoPaciente, motivo: String): void
+        + buscarPorPropietario(token: String, cliente: Cliente): List<Mascota>
+    }
+    
+    class ServicioSeguimiento {
+        - repositorioSeguimiento: IRepositorioSeguimiento
+        - gestorEventos: GestorEventos
+        --
+        + registrarSeguimiento(token: String, seguimiento: Seguimiento): void
+        + programarRecordatorio(token: String, paciente: Mascota, tipo: TipoRecordatorio, fecha: Date): void
+        + enviarCampana(token: String, campana: Campana): void
+        + enviarEncuesta(token: String, encuesta: Encuesta): void
+    }
+    
+    ' ========================================
+    ' REPORTES
+    ' ========================================
+    class ServicioReportes {
+        - repositorioFacturas: IRepositorioFactura
+        - repositorioCitas: IRepositorioCita
+        - repositorioInventario: IRepositorioInventario
+        --
+        + generarReporteVentas(token: String, fechaInicio: Date, fechaFin: Date): ReporteVentas
+        + generarReporteCitas(token: String, criterios: Map): ReporteCitas
+        + generarReporteInventario(token: String): ReporteInventario
+        + generarReporteClientes(token: String): ReporteClientes
+    }
+    
+    class ReporteVentas {
+        - fechaInicio: Date
+        - fechaFin: Date
+        - totalVentas: double
+        - totalFacturas: int
+        - ventasPorMetodoPago: Map<MetodoPago, Double>
+        - ventasPorServicio: Map<String, Double>
+        --
+        + generarPDF(): File
+        + exportarExcel(): File
+    }
+    
+    class ReporteCitas {
+        - fechaInicio: Date
+        - fechaFin: Date
+        - totalCitas: int
+        - citasPorEstado: Map<EstadoCita, Integer>
+        - citasPorVeterinario: Map<Veterinario, Integer>
+        --
+        + generarPDF(): File
+    }
+    
+    class ReporteInventario {
+        - fecha: Date
+        - productos: List<ProductoInventario>
+        - productosBajoStock: List<ProductoInventario>
+        - productosVencidos: List<ProductoInventario>
+        - valorTotalInventario: double
+        --
+        + generarPDF(): File
+        + exportarExcel(): File
+    }
+    
+    class ReporteClientes {
+        - totalClientes: int
+        - clientesActivos: int
+        - clientesInactivos: int
+        - clientesPorCategoria: Map<CategoriaCliente, Integer>
+        --
+        + generarPDF(): File
+    }
+    
+    class ReporteAuditoria {
+        - fechaInicio: Date
+        - fechaFin: Date
+        - registros: List<RegistroAuditoria>
+        - accesosPorUsuario: Map<Usuario, Integer>
+        - accesosDenegados: int
+        --
+        + generarPDF(): File
+    }
+}
+
+package "Capa de Aplicación - Facade y Coordinación" #LemonChiffon {
+    
+    ' ========================================
+    ' FACADE CON SEGURIDAD INTEGRADA
+    ' ========================================
+    class SistemaClinicaFacade <<Facade>> {
+        - servicioAutenticacion: ServicioAutenticacion
+        - servicioAutorizacion: ServicioAutorizacion
+        - servicioCitas: ServicioCitas
+        - servicioHistorialClinico: ServicioHistorialClinico
+        - servicioFacturacion: ServicioFacturacion
+        - servicioInventario: ServicioInventario
+        - servicioUsuarios: ServicioUsuarios
+        - servicioPacientes: ServicioPacientes
+        - servicioSeguimiento: ServicioSeguimiento
+        - servicioReportes: ServicioReportes
+        - auditoriaAcceso: AuditoriaAcceso
+        --
+        ' Autenticación
+        + login(email: String, password: String): TokenSesion
+        + logout(token: String): void
+        + recuperarContraseña(email: String): void
+        
+        ' Gestión de Citas (usa ServicioCitas)
+        + programarCita(token: String, datosCita: Map): Cita
+        + reagendarCita(token: String, citaId: Long, nuevaFecha: Date): void
+        + cancelarCita(token: String, citaId: Long, motivo: String): void
+        
+        ' Gestión de Pacientes (usa ServicioPacientes)
+        + registrarMascota(token: String, tipo: String, datos: Map): Mascota
+        + buscarMascotasPorPropietario(token: String, cliente: Cliente): List<Mascota>
+        
+        ' Atención Médica (usa ServicioHistorialClinico)
+        + registrarConsulta(token: String, consulta: Consulta): void
+        + obtenerHistorialPaciente(token: String, mascota: Mascota): HistorialClinico
+        
+        ' Facturación (usa ServicioFacturacion)
+        + crearFactura(token: String, cliente: Cliente, items: List<ItemFactura>): Factura
+        + procesarPago(token: String, facturaId: Long, metodoPago: MetodoPago): boolean
+        
+        ' Inventario (usa ServicioInventario)
+        + registrarIngresoInventario(token: String, lote: Lote): void
+        + asignarMedicamento(token: String, paciente: Mascota, medicamento: Medicamento): void
+        
+        ' Reportes (usa ServicioReportes)
+        + generarReporteGeneral(token: String, tipo: String, parametros: Map): Object
+        
+        # validarAcceso(token: String, permisos: List<String>): Usuario
+        # registrarAuditoria(usuario: Usuario, accion: String, resultado: ResultadoAccion): void
+    }
+    
+    ' ========================================
+    ' PROXIES SEGUROS
+    ' ========================================
+    class ProxyCitasSeguro extends ProxySeguro<ServicioCitas> {
+        + programarCita(token: String, datosCita: Map): Cita
+        + cancelarCita(token: String, citaId: Long, motivo: String): void
+    }
+    
+    class ProxyInventarioSeguro extends ProxySeguro<ServicioInventario> {
+        + registrarIngreso(token: String, lote: Lote): void
+        + registrarBaja(token: String, productoId: Long, cantidad: int, motivo: String): void
+    }
+    
+    class ProxyFacturacionSeguro extends ProxySeguro<ServicioFacturacion> {
+        + crearFactura(token: String, cliente: Cliente, items: List<ItemFactura>): Factura
+        + anularFactura(token: String, facturaId: Long, motivo: String): void
+    }
+    
+    class ProxyHistorialSeguro extends ProxySeguro<ServicioHistorialClinico> {
+        + agregarConsulta(token: String, historialId: Long, consulta: Consulta): void
+        + obtenerHistorialCompleto(token: String, paciente: Mascota): HistorialClinico
+    }
+}
+
+package "Configuración del Sistema" #Lavender {
+    
+    class ConfiguracionSistema <<Singleton>> {
+        - instance: ConfiguracionSistema
+        - nombreClinica: String
+        - nit: String
+        - direccion: Direccion
+        - telefono: Telefono
+        - email: Email
+        - logoClinica: String
+        - configuracionEmail: Map<String, String>
+        - horariosAtencion: Map<String, String>
+        - parametrosSeguridad: ParametrosSeguridad
+        - impuestoPorDefecto: double
+        --
+        + getInstance(): ConfiguracionSistema
+        + cargarConfiguracion(): void
+        + guardarConfiguracion(): void
+        + obtenerHorarioAtencion(diaSemana: String): String
+        + esHorarioHabil(fecha: LocalDateTime): boolean
+    }
+    
+    class ParametrosSeguridad {
+        - intentosMaximosLogin: int
+        - tiempoBloqueoMinutos: int
+        - duracionSesionMinutos: int
+        - longitudMinimaContraseña: int
+        - requiereCaracterEspecial: boolean
+        - requiereMayuscula: boolean
+        - requiereNumero: boolean
+        --
+        + validarContraseña(String): boolean
+    }
+}
+
+' ===============================================================================
+' RELACIONES ENTRE CLASES
+' ===============================================================================
+
+' === SEGURIDAD ===
+ServicioAutenticacion --> IRepositorioUsuario
+ServicioAutenticacion --> GestorSesiones
+ServicioAutenticacion --> GestorIntentosFallidos
+ServicioAutenticacion --> EncriptadorContraseña
+ServicioAutenticacion ..> TokenSesion : creates
+
+GestorSesiones --> SesionActiva
+TokenSesion --> Usuario
+TokenSesion --> DispositivoInfo
+
+GestorIntentosFallidos --> IntentosLogin
+IntentosLogin --> RegistroIntento
+
+ServicioAutorizacion --> IRepositorioPermiso
+ServicioAutorizacion --> IRepositorioRol
+ServicioAutorizacion --> CachePermisos
+
+Usuario "1" *-- "0..*" Rol : tiene >
+Rol "1" *-- "0..*" Permiso : contiene >
+
+Interceptor <|.. InterceptorSeguridad
+InterceptorSeguridad --> ServicioAutenticacion
+InterceptorSeguridad --> ServicioAutorizacion
+InterceptorSeguridad --> AuditoriaAcceso
+
+ProxySeguro --> InterceptorSeguridad
+ProxySeguro --> ContextoEjecucion
+
+' === USUARIOS ===
+IRepositorio <|-- IRepositorioUsuario
+Usuario --> Email
+Usuario --> Telefono
+
+Usuario <|-- Veterinario
+Usuario <|-- Recepcionista
+Usuario <|-- Administrador
+Usuario <|-- Cliente
+
+Cliente --> Direccion
+Cliente --> CategoriaCliente
+
+FactoryUsuario <|-- FactoryUsuarioConcreto
+FactoryUsuarioConcreto ..> Veterinario : creates
+FactoryUsuarioConcreto ..> Recepcionista : creates
+FactoryUsuarioConcreto ..> Administrador : creates
+FactoryUsuarioConcreto ..> Cliente : creates
+
+' === MASCOTAS ===
+IRepositorio <|-- IRepositorioMascota
+
+Mascota <|-- Perro
+Mascota <|-- Gato
+Mascota <|-- Ave
+Mascota <|-- Reptil
+
+Cliente "1" -- "0..*" Mascota : posee >
+Mascota --> EstadoPaciente
+Mascota --> Sexo
+
+FactoryMascota <|-- FactoryMascotaConcreto
+FactoryMascotaConcreto ..> Perro : creates
+FactoryMascotaConcreto ..> Gato : creates
+FactoryMascotaConcreto ..> Ave : creates
+FactoryMascotaConcreto ..> Reptil : creates
+
+Especie "1" *-- "0..*" Raza : tiene >
+
+' === CITAS ===
+IRepositorio <|-- IRepositorioCita
+
+Cita "*" -- "1" Cliente : solicita 
+Cita "*" -- "1" Veterinario : atiende 
+Cita "*" -- "1" Mascota : para 
+Cita --> EstadoCita
+Cita --> TipoServicio
+
+EstadoCita <|.. EstadoProgramada
+EstadoCita <|.. EstadoConfirmada
+EstadoCita <|.. EstadoEnProgreso
+EstadoCita <|.. EstadoCompletada
+EstadoCita <|.. EstadoCancelada
+
+EstadoProgramada ..> EstadoConfirmada : transicion
+EstadoConfirmada ..> EstadoEnProgreso : transicion
+EstadoEnProgreso ..> EstadoCompletada : transicion
+
+ValidadorDisponibilidad --> IRepositorioCita
+ValidadorDisponibilidad --> ConfiguracionSistema
+
+' === HISTORIA CLÍNICA ===
+IRepositorio <|-- IRepositorioHistorial
+
+HistorialClinico "1" -- "1" Mascota : pertenece 
+HistorialClinico "1" *-- "0..*" Consulta : contiene >
+HistorialClinico "1" *-- "0..*" Vacuna : contiene >
+HistorialClinico "1" *-- "0..*" Examen : contiene >
+HistorialClinico "1" *-- "0..*" Tratamiento : contiene >
+
+BuilderHistorial ..> HistorialClinico : builds
+
+Consulta "*" -- "1" Veterinario : realiza 
+Consulta "*" -- "1" Mascota : atiende 
+Consulta --> SignosVitales
+Consulta --> Cita
+Consulta "1" *-- "0..*" ArchivoClinico : adjunta >
+Consulta --> Receta
+
+Receta "1" *-- "0..*" PrescripcionMedicamento : contiene >
+PrescripcionMedicamento --> Medicamento
+
+Tratamiento "1" *-- "0..*" Medicamento : usa >
+Tratamiento --> EstadoTratamiento
+
+ProcesoConsulta ..> Consulta
+ProcesoConsulta <|-- ConsultaGeneral
+ProcesoConsulta <|-- ConsultaEmergencia
+ProcesoConsulta <|-- ConsultaEspecializada
+
+ConsentimientoClinico --> Cliente
+ConsentimientoClinico --> Mascota
+ConsentimientoClinico --> Veterinario
+
+Triage --> Mascota
+Triage --> SignosVitales
+Triage --> NivelPrioridad
+
+' === INVENTARIO ===
+IRepositorio <|-- IRepositorioInventario
+
+ComponenteInventario <|-- ProductoInventario
+ComponenteInventario <|-- CategoriaInventario
+ProductoInventario <|-- Medicamento
+
+CategoriaInventario "1" *-- "0..*" ComponenteInventario : contiene >
+ProductoInventario --> CategoriaProducto
+
+Lote --> ProductoInventario
+Lote --> Proveedor
+Proveedor --> Email
+Proveedor --> Telefono
+Proveedor --> Direccion
+
+MovimientoInventario --> ProductoInventario
+MovimientoInventario --> Lote
+MovimientoInventario --> Usuario
+MovimientoInventario --> TipoMovimiento
+MovimientoInventario --> Cita
+
+' === FACTURACIÓN ===
+IRepositorio <|-- IRepositorioFactura
+
+Factura "*" -- "1" Cliente : pertenece 
+Factura --> Cita
+Factura "1" *-- "0..*" ItemFactura : contiene >
+Factura --> EstrategiaPrecio
+Factura --> EstadoFactura
+Factura --> MetodoPago
+
+ItemFactura --> ServicioVeterinario
+ItemFactura --> ProductoInventario
+
+EstrategiaPrecio <|.. PrecioNormal
+EstrategiaPrecio <|.. PrecioClienteVIP
+EstrategiaPrecio <|.. PrecioPromocion
+EstrategiaPrecio <|.. PrecioPorVolumen
+
+ServicioVeterinario <|.. ServicioBase
+ServicioVeterinario <|.. DecoradorServicio
+DecoradorServicio <|-- DecoradorUrgencia
+DecoradorServicio <|-- DecoradorDomicilio
+DecoradorServicio <|-- DecoradorHorarioNocturno
+DecoradorServicio <|-- DecoradorConEspecialista
+
+DecoradorServicio --> ServicioVeterinario
+
+ServicioBase --> TipoServicio
+GeneradorFactura --> Factura
+GeneradorFactura --> ConfiguracionSistema
+
+' === SEGUIMIENTO ===
+Seguimiento --> Mascota
+Seguimiento --> Usuario
+Seguimiento --> MedioContacto
+
+Campana "1" *-- "0..*" Cliente : dirigida a >
+Campana --> CanalComunicacion
+Campana --> EstadisticasCampana
+
+Encuesta --> Cliente
+Encuesta --> Cita
+Encuesta "1" *-- "0..*" Pregunta : contiene >
+Pregunta --> TipoPregunta
+
+InteraccionCliente --> Cliente
+InteraccionCliente --> Usuario
+InteraccionCliente --> TipoInteraccion
+
+' === EVENTOS Y NOTIFICACIONES ===
+Evento <|.. EventoCita
+Evento <|.. EventoInventario
+Evento <|.. EventoRecordatorio
+
+EventoCita --> Cita
+EventoCita --> TipoEventoCita
+EventoInventario --> ProductoInventario
+EventoInventario --> TipoEventoInventario
+EventoRecordatorio --> Mascota
+EventoRecordatorio --> TipoRecordatorio
+
+GestorEventos "1" *-- "0..*" ObservadorEvento : gestiona >
+
+ObservadorEvento <|.. NotificadorCita
+ObservadorEvento <|.. NotificadorStockBajo
+ObservadorEvento <|.. NotificadorVacunacion
+
+NotificadorCita --> AdaptadorNotificacion
+NotificadorStockBajo --> AdaptadorEmail
+NotificadorVacunacion --> AdaptadorNotificacion
+
+AdaptadorNotificacion <|.. AdaptadorEmail
+AdaptadorNotificacion <|.. AdaptadorSMS
+AdaptadorNotificacion <|.. AdaptadorWhatsApp
+
+AdaptadorEmail --> ServicioEmailExterno
+AdaptadorSMS --> ServicioSMSExterno
+AdaptadorWhatsApp --> ServicioWhatsAppExterno
+
+' === AUDITORÍA ===
+IRepositorio <|-- IRepositorioAuditoria
+AuditoriaAcceso --> IRepositorioAuditoria
+AuditoriaAcceso ..> RegistroAuditoria : creates
+RegistroAuditoria --> Usuario
+RegistroAuditoria --> ResultadoAccion
+
+' === SERVICIOS ===
+ServicioCitas --> IRepositorioCita
+ServicioCitas --> ValidadorDisponibilidad
+ServicioCitas --> GestorEventos
+ServicioCitas --> AuditoriaAcceso
+
+ServicioHistorialClinico --> IRepositorioHistorial
+ServicioHistorialClinico --> BuilderHistorial
+ServicioHistorialClinico --> AuditoriaAcceso
+
+ServicioInventario --> IRepositorioInventario
+ServicioInventario --> GestorEventos
+ServicioInventario --> AuditoriaAcceso
+
+ServicioFacturacion --> IRepositorioFactura
+ServicioFacturacion --> EstrategiaPrecio
+ServicioFacturacion --> GeneradorFactura
+ServicioFacturacion --> AuditoriaAcceso
+
+ServicioUsuarios --> IRepositorioUsuario
+ServicioUsuarios --> FactoryUsuario
+ServicioUsuarios --> EncriptadorContraseña
+ServicioUsuarios --> AuditoriaAcceso
+
+ServicioPacientes --> IRepositorioMascota
+ServicioPacientes --> FactoryMascota
+ServicioPacientes --> AuditoriaAcceso
+
+ServicioSeguimiento --> GestorEventos
+
+ServicioReportes --> IRepositorioFactura
+ServicioReportes --> IRepositorioCita
+ServicioReportes --> IRepositorioInventario
+
+' === PROXIES SEGUROS ===
+ProxySeguro <|-- ProxyCitasSeguro
+ProxySeguro <|-- ProxyInventarioSeguro
+ProxySeguro <|-- ProxyFacturacionSeguro
+ProxySeguro <|-- ProxyHistorialSeguro
+
+ProxyCitasSeguro --> ServicioCitas
+ProxyInventarioSeguro --> ServicioInventario
+ProxyFacturacionSeguro --> ServicioFacturacion
+ProxyHistorialSeguro --> ServicioHistorialClinico
+
+' === FACADE ===
+SistemaClinicaFacade --> ServicioAutenticacion
+SistemaClinicaFacade --> ServicioAutorizacion
+SistemaClinicaFacade --> ServicioCitas
+SistemaClinicaFacade --> ServicioHistorialClinico
+SistemaClinicaFacade --> ServicioFacturacion
+SistemaClinicaFacade --> ServicioInventario
+SistemaClinicaFacade --> ServicioUsuarios
+SistemaClinicaFacade --> ServicioPacientes
+SistemaClinicaFacade --> ServicioSeguimiento
+SistemaClinicaFacade --> ServicioReportes
+SistemaClinicaFacade --> AuditoriaAcceso
+
+' === REPOSITORIOS ===
+IRepositorioRol <|-- IRepositorio
+IRepositorioPermiso <|-- IRepositorio
+
+@enduml
+
