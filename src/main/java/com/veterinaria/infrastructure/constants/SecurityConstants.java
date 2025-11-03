@@ -19,7 +19,7 @@ public final class SecurityConstants {
 
     // Endpoints públicos
     public static final String[] PUBLIC_ENDPOINTS = {
-            "/api/v1/auth/**",
+            "/auth/**",
             "/api-docs/**",
             "/swagger-ui/**",
             "/swagger-ui.html",
@@ -32,6 +32,7 @@ public final class SecurityConstants {
     public static final String ROLE_VETERINARIO = "ROLE_VETERINARIO";
     public static final String ROLE_ASISTENTE = "ROLE_ASISTENTE";
     public static final String ROLE_RECEPCIONISTA = "ROLE_RECEPCIONISTA";
+    public static final String ROLE_CLIENTE = "ROLE_CLIENTE";
 
     // Permisos
     public static final String PERMISSION_READ = "READ";

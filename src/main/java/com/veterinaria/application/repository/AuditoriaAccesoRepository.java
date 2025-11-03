@@ -65,7 +65,7 @@ public interface AuditoriaAccesoRepository extends JpaRepository<AuditoriaAcceso
      * @param pageable Configuración de paginación
      * @return Página de registros sospechosos
      */
-    Page<AuditoriaAcceso> findBySospechosaTrueOrderByFechaHoraDesc(Pageable pageable);
+    Page<AuditoriaAcceso> findBySospechosoTrueOrderByFechaHoraDesc(Pageable pageable);
 
     /**
      * Busca registros por dirección IP.
