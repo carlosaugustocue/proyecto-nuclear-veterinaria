@@ -109,5 +109,8 @@ tmp/
 # LibreOffice/OpenOffice lock files
 .~lock.*
 
+# Test result reports
+Test Results*.html
+
 # Main test files (if you want to exclude them from commits)
 # MainTest*.java
