@@ -69,7 +69,7 @@ public abstract class Paciente extends BaseAuditableEntity {
 
     @DecimalMin(value = "0.1", message = "El peso debe ser mayor a 0.1 kg")
     @DecimalMax(value = "500.0", message = "El peso no puede exceder 500 kg")
-    @Column(precision = 5, scale = 2)
+    @Column(name = "peso_kg")
     private Double pesoKg;
 
     @NotNull(message = "El estado del paciente es obligatorio")
