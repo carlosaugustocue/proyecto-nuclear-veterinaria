@@ -64,9 +64,11 @@ public class SecurityConfig {
                         // Rutas públicas (sin autenticación)
                         .requestMatchers("/api/auth/login", "/api/auth/recuperar-password").permitAll()
                         .requestMatchers("/api/public/**").permitAll()
-                        
-                        // Documentación API (Swagger)
-                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-resources/**").permitAll()
+
+                        // Documentación API (Swagger/OpenAPI)
+                        .requestMatchers("/swagger-ui/**", "/swagger-ui.html").permitAll()
+                        .requestMatchers("/v3/api-docs/**", "/api-docs/**").permitAll()
+                        .requestMatchers("/swagger-resources/**", "/webjars/**").permitAll()
                         
                         // Health check de Actuator
                         .requestMatchers("/actuator/health").permitAll()
