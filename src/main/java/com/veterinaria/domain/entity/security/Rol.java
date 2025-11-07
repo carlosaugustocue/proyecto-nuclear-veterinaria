@@ -2,101 +2,100 @@ package com.veterinaria.domain.entity.security;
 
 import com.veterinaria.domain.entity.BaseAuditableEntity;
 import jakarta.persistence.*;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Size;
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
- * Entidad que representa un rol en el sistema de seguridad.
- * Los roles definen conjuntos de permisos que se asignan a los usuarios.
+ * Entidad que representa un rol en el sistema.
+ * Los roles agrupan permisos y se asignan a usuarios.
+ *
+ * @author Sistema Veterinaria
  */
 @Entity
-@Table(name = "roles", uniqueConstraints = {
-        @UniqueConstraint(columnNames = "nombre")
-})
+@Table(name = "roles")
 @Getter
 @Setter
+@SuperBuilder
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
 public class Rol extends BaseAuditableEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @NotBlank(message = "El nombre del rol es obligatorio")
-    @Size(max = 50, message = "El nombre del rol no puede exceder 50 caracteres")
-    @Column(name = "nombre", nullable = false, unique = true, length = 50)
+    /**
+     * Nombre del rol (ej: ADMINISTRADOR, VETERINARIO, RECEPCIONISTA)
+     */
+    @Column(nullable = false, unique = true, length = 50)
     private String nombre;
 
-    @Size(max = 255, message = "La descripción no puede exceder 255 caracteres")
-    @Column(name = "descripcion")
+    /**
+     * Descripción del rol
+     */
+    @Column(length = 255)
     private String descripcion;
 
     /**
-     * Permisos asociados a este rol.
-     * Relación Many-to-Many con la entidad Permiso.
+     * Permisos asociados al rol (Many-to-Many)
      */
-    @ElementCollection(fetch = FetchType.EAGER)
-    @CollectionTable(
-            name = "rol_permisos",
-            joinColumns = @JoinColumn(name = "rol_id")
+    @ManyToMany(fetch = FetchType.EAGER)
+    @JoinTable(
+        name = "roles_permisos",
+        joinColumns = @JoinColumn(name = "rol_id"),
+        inverseJoinColumns = @JoinColumn(name = "permiso_id")
     )
-    @Column(name = "permiso")
     @Builder.Default
-    private Set<String> permisos = new HashSet<>();
+    private List<Permiso> permisos = new ArrayList<>();
 
     /**
-     * Nivel jerárquico del rol (1 = más alto, 10 = más bajo).
-     * Se usa para validar que un usuario solo pueda gestionar roles de nivel inferior.
+     * Usuarios que tienen este rol (Many-to-Many inversa)
      */
-    @Column(name = "nivel_jerarquico")
-    private Integer nivelJerarquico;
+    @ManyToMany(mappedBy = "roles")
+    @Builder.Default
+    private List<Usuario> usuarios = new ArrayList<>();
 
     /**
-     * Agrega un permiso al rol.
+     * Agrega un permiso al rol
      *
-     * @param permiso Permiso a agregar
+     * @param permiso permiso a agregar
      */
-    public void agregarPermiso(String permiso) {
-        if (this.permisos == null) {
-            this.permisos = new HashSet<>();
-        }
-        this.permisos.add(permiso);
-    }
-
-    /**
-     * Remueve un permiso del rol.
-     *
-     * @param permiso Permiso a remover
-     */
-    public void removerPermiso(String permiso) {
-        if (this.permisos != null) {
-            this.permisos.remove(permiso);
+    public void agregarPermiso(Permiso permiso) {
+        if (permiso != null && !permisos.contains(permiso)) {
+            permisos.add(permiso);
         }
     }
 
     /**
-     * Verifica si el rol tiene un permiso específico.
+     * Remueve un permiso del rol
      *
-     * @param permiso Permiso a verificar
+     * @param permiso permiso a remover
+     */
+    public void removerPermiso(Permiso permiso) {
+        permisos.remove(permiso);
+    }
+
+    /**
+     * Verifica si el rol tiene un permiso específico
+     *
+     * @param codigoPermiso código del permiso a verificar
      * @return true si el rol tiene el permiso
      */
-    public boolean tienePermiso(String permiso) {
-        return this.permisos != null && this.permisos.contains(permiso);
+    public boolean tienePermiso(String codigoPermiso) {
+        return permisos.stream()
+            .anyMatch(p -> p.getCodigo().equals(codigoPermiso));
     }
 
     @Override
     public String toString() {
         return "Rol{" +
-                "id=" + id +
+                "id=" + getId() +
                 ", nombre='" + nombre + '\'' +
-                ", descripcion='" + descripcion + '\'' +
-                ", nivelJerarquico=" + nivelJerarquico +
+                ", activo=" + getIsActive() +
+                ", permisos=" + permisos.size() +
                 '}';
     }
 }

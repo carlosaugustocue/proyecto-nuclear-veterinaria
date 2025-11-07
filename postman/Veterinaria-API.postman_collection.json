@@ -1,0 +1,518 @@
+{
+	"info": {
+		"_postman_id": "veterinaria-api-collection",
+		"name": "Veterinaria API - Sistema de Gestión",
+		"description": "Colección completa de endpoints para el sistema de gestión veterinaria.\n\n**Configuración inicial:**\n1. Asegúrate de que la aplicación esté corriendo en `http://localhost:8080`\n2. Si tienes autenticación JWT habilitada, obtén un token y configúralo en las variables de colección\n3. Primero crea un Cliente, luego crea Pacientes asociados a ese Cliente\n\n**Orden recomendado:**\n1. Clientes → Crear Cliente\n2. Pacientes → Crear Paciente (usando el clienteId del paso anterior)\n3. Prueba los demás endpoints de búsqueda y actualización",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Clientes",
+			"item": [
+				{
+					"name": "Crear Cliente",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"nombre\": \"Juan\",\n  \"apellido\": \"Pérez\",\n  \"dni\": \"12345678\",\n  \"email\": \"juan.perez@example.com\",\n  \"telefono\": \"3001234567\",\n  \"direccion\": \"Calle 123 #45-67\",\n  \"ciudad\": \"Bogotá\",\n  \"departamento\": \"Cundinamarca\",\n  \"codigoPostal\": \"110111\",\n  \"observaciones\": \"Cliente VIP, prefiere citas en la mañana\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/clientes",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "clientes"]
+						},
+						"description": "Crea un nuevo cliente en el sistema. Todos los campos son obligatorios excepto observaciones."
+					},
+					"response": []
+				},
+				{
+					"name": "Obtener Todos los Clientes",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/clientes",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "clientes"]
+						},
+						"description": "Obtiene la lista completa de todos los clientes registrados."
+					},
+					"response": []
+				},
+				{
+					"name": "Obtener Cliente por ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/clientes/1",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "clientes", "1"]
+						},
+						"description": "Obtiene los detalles de un cliente específico por su ID."
+					},
+					"response": []
+				},
+				{
+					"name": "Actualizar Cliente",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"juan.nuevo@example.com\",\n  \"telefono\": \"3009876543\",\n  \"direccion\": \"Calle 456 #78-90\",\n  \"ciudad\": \"Medellín\",\n  \"departamento\": \"Antioquia\",\n  \"codigoPostal\": \"050001\",\n  \"observaciones\": \"Observaciones actualizadas - Cliente se mudó a Medellín\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/clientes/1",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "clientes", "1"]
+						},
+						"description": "Actualiza los datos de un cliente existente. No se puede actualizar nombre, apellido ni DNI."
+					},
+					"response": []
+				},
+				{
+					"name": "Eliminar Cliente",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/clientes/1",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "clientes", "1"]
+						},
+						"description": "Elimina un cliente del sistema. No se puede eliminar si tiene pacientes activos."
+					},
+					"response": []
+				},
+				{
+					"name": "Buscar por Nombre o Apellido",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/clientes/buscar?termino=Juan",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "clientes", "buscar"],
+							"query": [
+								{
+									"key": "termino",
+									"value": "Juan",
+									"description": "Término de búsqueda (busca en nombre y apellido)"
+								}
+							]
+						},
+						"description": "Busca clientes por nombre o apellido (búsqueda parcial)."
+					},
+					"response": []
+				},
+				{
+					"name": "Buscar por DNI",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/clientes/dni/12345678",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "clientes", "dni", "12345678"]
+						},
+						"description": "Busca un cliente específico por su DNI."
+					},
+					"response": []
+				},
+				{
+					"name": "Buscar por Email",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/clientes/email?email=juan.perez@example.com",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "clientes", "email"],
+							"query": [
+								{
+									"key": "email",
+									"value": "juan.perez@example.com",
+									"description": "Email del cliente"
+								}
+							]
+						},
+						"description": "Busca un cliente específico por su email."
+					},
+					"response": []
+				},
+				{
+					"name": "Buscar por Ciudad",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/clientes/ciudad/Bogotá",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "clientes", "ciudad", "Bogotá"]
+						},
+						"description": "Busca todos los clientes de una ciudad específica."
+					},
+					"response": []
+				},
+				{
+					"name": "Clientes con Pacientes Activos",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/clientes/con-pacientes-activos",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "clientes", "con-pacientes-activos"]
+						},
+						"description": "Obtiene la lista de clientes que tienen al menos un paciente activo."
+					},
+					"response": []
+				}
+			],
+			"description": "Endpoints para gestión de clientes (propietarios de mascotas)"
+		},
+		{
+			"name": "Pacientes",
+			"item": [
+				{
+					"name": "Crear Paciente (Perro)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"nombre\": \"Max\",\n  \"especie\": \"PERRO\",\n  \"raza\": \"Labrador Retriever\",\n  \"fechaNacimiento\": \"2021-01-15\",\n  \"sexo\": \"MACHO\",\n  \"color\": \"Dorado\",\n  \"pesoKg\": 30.5,\n  \"microchip\": \"123456789012345\",\n  \"observaciones\": \"Paciente sano y muy activo. Vacunas al día.\",\n  \"fotoUrl\": null,\n  \"clienteId\": 1\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/pacientes",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "pacientes"]
+						},
+						"description": "Crea un nuevo paciente (perro) en el sistema. El clienteId debe existir previamente."
+					},
+					"response": []
+				},
+				{
+					"name": "Crear Paciente (Gato)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"nombre\": \"Luna\",\n  \"especie\": \"GATO\",\n  \"raza\": \"Siamés\",\n  \"fechaNacimiento\": \"2022-03-20\",\n  \"sexo\": \"HEMBRA\",\n  \"color\": \"Blanco con manchas oscuras\",\n  \"pesoKg\": 4.2,\n  \"microchip\": \"987654321098765\",\n  \"observaciones\": \"Gata tranquila, esterilizada. Alérgica a ciertos alimentos.\",\n  \"fotoUrl\": null,\n  \"clienteId\": 1\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/pacientes",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "pacientes"]
+						},
+						"description": "Crea un nuevo paciente (gato) en el sistema. El clienteId debe existir previamente."
+					},
+					"response": []
+				},
+				{
+					"name": "Obtener Todos los Pacientes",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/pacientes",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "pacientes"]
+						},
+						"description": "Obtiene la lista completa de todos los pacientes registrados."
+					},
+					"response": []
+				},
+				{
+					"name": "Obtener Paciente por ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/pacientes/1",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "pacientes", "1"]
+						},
+						"description": "Obtiene los detalles de un paciente específico por su ID."
+					},
+					"response": []
+				},
+				{
+					"name": "Actualizar Paciente",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"raza\": \"Golden Retriever\",\n  \"color\": \"Dorado claro\",\n  \"pesoKg\": 32.0,\n  \"estado\": \"ACTIVO\",\n  \"fotoUrl\": \"https://example.com/max-foto.jpg\",\n  \"observaciones\": \"Peso aumentó. Control nutricional recomendado.\",\n  \"microchip\": null\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/pacientes/1",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "pacientes", "1"]
+						},
+						"description": "Actualiza los datos de un paciente existente. Campos opcionales pueden ser null si no se modifican."
+					},
+					"response": []
+				},
+				{
+					"name": "Eliminar Paciente",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/pacientes/1",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "pacientes", "1"]
+						},
+						"description": "Elimina un paciente del sistema (eliminación física)."
+					},
+					"response": []
+				},
+				{
+					"name": "Buscar por Nombre",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/pacientes/buscar?nombre=Max",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "pacientes", "buscar"],
+							"query": [
+								{
+									"key": "nombre",
+									"value": "Max",
+									"description": "Nombre del paciente (búsqueda parcial)"
+								}
+							]
+						},
+						"description": "Busca pacientes por nombre (búsqueda parcial, no case-sensitive)."
+					},
+					"response": []
+				},
+				{
+					"name": "Buscar por Especie - Perros",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/pacientes/especie/PERRO",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "pacientes", "especie", "PERRO"]
+						},
+						"description": "Busca todos los pacientes de especie PERRO."
+					},
+					"response": []
+				},
+				{
+					"name": "Buscar por Especie - Gatos",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/pacientes/especie/GATO",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "pacientes", "especie", "GATO"]
+						},
+						"description": "Busca todos los pacientes de especie GATO."
+					},
+					"response": []
+				},
+				{
+					"name": "Buscar por Estado - Activos",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/pacientes/estado/ACTIVO",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "pacientes", "estado", "ACTIVO"]
+						},
+						"description": "Busca todos los pacientes con estado ACTIVO."
+					},
+					"response": []
+				},
+				{
+					"name": "Buscar por Estado - Inactivos",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/pacientes/estado/INACTIVO",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "pacientes", "estado", "INACTIVO"]
+						},
+						"description": "Busca todos los pacientes con estado INACTIVO."
+					},
+					"response": []
+				},
+				{
+					"name": "Buscar por Estado - Fallecidos",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/pacientes/estado/FALLECIDO",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "pacientes", "estado", "FALLECIDO"]
+						},
+						"description": "Busca todos los pacientes con estado FALLECIDO."
+					},
+					"response": []
+				},
+				{
+					"name": "Buscar Pacientes por Cliente",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/pacientes/cliente/1",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "pacientes", "cliente", "1"]
+						},
+						"description": "Busca todos los pacientes de un cliente específico (todos los estados)."
+					},
+					"response": []
+				},
+				{
+					"name": "Buscar Pacientes Activos por Cliente",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/pacientes/cliente/1/activos",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "pacientes", "cliente", "1", "activos"]
+						},
+						"description": "Busca solo los pacientes activos de un cliente específico."
+					},
+					"response": []
+				},
+				{
+					"name": "Buscar por Microchip",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/pacientes/microchip/123456789012345",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "pacientes", "microchip", "123456789012345"]
+						},
+						"description": "Busca un paciente específico por su número de microchip."
+					},
+					"response": []
+				},
+				{
+					"name": "Marcar como Fallecido",
+					"request": {
+						"method": "PATCH",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/pacientes/1/marcar-fallecido",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "pacientes", "1", "marcar-fallecido"]
+						},
+						"description": "Marca un paciente como fallecido (cambia el estado a FALLECIDO)."
+					},
+					"response": []
+				},
+				{
+					"name": "Reactivar Paciente",
+					"request": {
+						"method": "PATCH",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/pacientes/1/reactivar",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "pacientes", "1", "reactivar"]
+						},
+						"description": "Reactiva un paciente (cambia el estado a ACTIVO)."
+					},
+					"response": []
+				},
+				{
+					"name": "Contar Pacientes por Estado",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/pacientes/contar/estado/ACTIVO",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "pacientes", "contar", "estado", "ACTIVO"]
+						},
+						"description": "Cuenta cuántos pacientes existen con un estado específico (ACTIVO, INACTIVO, FALLECIDO)."
+					},
+					"response": []
+				},
+				{
+					"name": "Filtrar por Especie y Estado",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/pacientes/filtrar?especie=PERRO&estado=ACTIVO",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "pacientes", "filtrar"],
+							"query": [
+								{
+									"key": "especie",
+									"value": "PERRO",
+									"description": "PERRO o GATO"
+								},
+								{
+									"key": "estado",
+									"value": "ACTIVO",
+									"description": "ACTIVO, INACTIVO o FALLECIDO"
+								}
+							]
+						},
+						"description": "Filtra pacientes por especie y estado simultáneamente."
+					},
+					"response": []
+				}
+			],
+			"description": "Endpoints para gestión de pacientes (mascotas)"
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:8080",
+			"type": "string"
+		},
+		{
+			"key": "jwtToken",
+			"value": "",
+			"type": "string"
+		}
+	]
+}

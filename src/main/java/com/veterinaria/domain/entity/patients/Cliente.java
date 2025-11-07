@@ -54,8 +54,8 @@ public class Cliente extends BaseAuditableEntity {
     private String email;
 
     @NotBlank(message = "El teléfono es obligatorio")
-    @Pattern(regexp = "^[+]?[0-9]{7,15}$", message = "El teléfono debe tener entre 7 y 15 dígitos")
-    @Column(nullable = false, length = 20)
+    @Pattern(regexp = "^[+]?[0-9]{1,4}\\s?[0-9]{7,15}$", message = "El teléfono debe tener un formato válido")
+    @Column(nullable = false, length = 25)
     private String telefono;
 
     @NotBlank(message = "La dirección es obligatoria")

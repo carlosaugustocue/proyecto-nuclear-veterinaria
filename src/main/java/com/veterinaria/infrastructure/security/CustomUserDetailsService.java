@@ -102,7 +102,7 @@ public class CustomUserDetailsService implements UserDetailsService {
                 if (rol.getPermisos() != null) {
                     authorities.addAll(
                             rol.getPermisos().stream()
-                                    .map(SimpleGrantedAuthority::new)
+                                    .map(permiso -> new SimpleGrantedAuthority(permiso.getCodigo()))
                                     .collect(Collectors.toSet())
                     );
                 }

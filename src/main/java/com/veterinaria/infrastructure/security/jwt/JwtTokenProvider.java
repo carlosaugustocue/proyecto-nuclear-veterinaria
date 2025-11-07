@@ -1,154 +1,138 @@
 package com.veterinaria.infrastructure.security.jwt;
 
-import com.veterinaria.infrastructure.constants.SecurityConstants;
 import io.jsonwebtoken.*;
+import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
-import io.jsonwebtoken.security.SignatureException;
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
-import java.nio.charset.StandardCharsets;
 import java.util.Date;
-import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 /**
  * Proveedor de tokens JWT.
- * Patrón Singleton - Gestiona la creación y validación de tokens JWT de forma centralizada.
- * Implementa las mejores prácticas de seguridad para manejo de JWT.
+ * Genera, valida y extrae información de tokens JWT.
+ *
+ * @author Sistema Veterinaria
  */
-@Component
 @Slf4j
+@Component
 public class JwtTokenProvider {
 
-    @Value("${jwt.secret}")
+    @Value("${jwt.secret:VeterinariaSecretKeyDefaultShouldBeChangedInProductionEnvironment2024!@#$%}")
     private String jwtSecret;
 
-    @Value("${jwt.expiration}")
-    private long jwtExpirationMs;
+    @Value("${jwt.expiration:86400000}") // 24 horas por defecto
+    private long jwtExpiration;
 
-    @Value("${jwt.refresh-expiration}")
-    private long jwtRefreshExpirationMs;
+    private SecretKey key;
 
-    private SecretKey secretKey;
-
+    /**
+     * Inicializa la clave de firma JWT
+     */
     @PostConstruct
     public void init() {
-        this.secretKey = Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
+        byte[] keyBytes = Decoders.BASE64.decode(
+            java.util.Base64.getEncoder().encodeToString(jwtSecret.getBytes())
+        );
+        this.key = Keys.hmacShaKeyFor(keyBytes);
         log.info("JwtTokenProvider inicializado correctamente");
     }
 
     /**
-     * Genera un token JWT a partir de la autenticación.
+     * Genera un token JWT para un usuario
      *
-     * @param authentication Objeto de autenticación de Spring Security
-     * @return Token JWT
+     * @param email email del usuario
+     * @param roles roles del usuario
+     * @param permisos permisos del usuario
+     * @return token JWT
      */
-    public String generateToken(Authentication authentication) {
-        UserDetails userDetails = (UserDetails) authentication.getPrincipal();
-        return generateTokenFromUsername(userDetails.getUsername(), userDetails.getAuthorities()
-                .stream()
-                .map(GrantedAuthority::getAuthority)
-                .collect(Collectors.toList()));
+    public String generarToken(String email, List<String> roles, List<String> permisos) {
+        Date ahora = new Date();
+        Date fechaExpiracion = new Date(ahora.getTime() + jwtExpiration);
+
+        return Jwts.builder()
+                .subject(email)
+                .claim("roles", roles)
+                .claim("permisos", permisos)
+                .issuedAt(ahora)
+                .expiration(fechaExpiracion)
+                .signWith(key, Jwts.SIG.HS512)
+                .compact();
     }
 
     /**
-     * Genera un token JWT desde un username.
+     * Genera un token con claims personalizados
      *
-     * @param username    Username del usuario
-     * @param authorities Lista de authorities/roles del usuario
-     * @return Token JWT
+     * @param email email del usuario
+     * @param claims claims adicionales
+     * @return token JWT
      */
-    public String generateTokenFromUsername(String username, java.util.List<String> authorities) {
-        Date now = new Date();
-        Date expiryDate = new Date(now.getTime() + jwtExpirationMs);
-
-        Map<String, Object> claims = new HashMap<>();
-        claims.put(SecurityConstants.JWT_USERNAME_KEY, username);
-        claims.put(SecurityConstants.JWT_AUTHORITIES_KEY, authorities);
+    public String generarTokenConClaims(String email, Map<String, Object> claims) {
+        Date ahora = new Date();
+        Date fechaExpiracion = new Date(ahora.getTime() + jwtExpiration);
 
         return Jwts.builder()
+                .subject(email)
                 .claims(claims)
-                .subject(username)
-                .issuedAt(now)
-                .expiration(expiryDate)
-                .signWith(secretKey, Jwts.SIG.HS512)
+                .issuedAt(ahora)
+                .expiration(fechaExpiracion)
+                .signWith(key, Jwts.SIG.HS512)
                 .compact();
     }
 
     /**
-     * Genera un refresh token.
+     * Extrae el email del token
      *
-     * @param username Username del usuario
-     * @return Refresh token
+     * @param token token JWT
+     * @return email del usuario
      */
-    public String generateRefreshToken(String username) {
-        Date now = new Date();
-        Date expiryDate = new Date(now.getTime() + jwtRefreshExpirationMs);
-
-        return Jwts.builder()
-                .subject(username)
-                .issuedAt(now)
-                .expiration(expiryDate)
-                .signWith(secretKey, Jwts.SIG.HS512)
-                .compact();
-    }
-
-    /**
-     * Obtiene el username desde el token JWT.
-     *
-     * @param token Token JWT
-     * @return Username
-     */
-    public String getUsernameFromToken(String token) {
-        Claims claims = Jwts.parser()
-                .verifyWith(secretKey)
-                .build()
-                .parseSignedClaims(token)
-                .getPayload();
-
+    public String obtenerEmailDelToken(String token) {
+        Claims claims = extraerClaims(token);
         return claims.getSubject();
     }
 
     /**
-     * Obtiene las authorities/roles desde el token JWT.
+     * Extrae los roles del token
      *
-     * @param token Token JWT
-     * @return Lista de authorities
+     * @param token token JWT
+     * @return lista de roles
      */
     @SuppressWarnings("unchecked")
-    public java.util.List<String> getAuthoritiesFromToken(String token) {
-        Claims claims = Jwts.parser()
-                .verifyWith(secretKey)
-                .build()
-                .parseSignedClaims(token)
-                .getPayload();
-
-        return (java.util.List<String>) claims.get(SecurityConstants.JWT_AUTHORITIES_KEY);
+    public List<String> obtenerRolesDelToken(String token) {
+        Claims claims = extraerClaims(token);
+        return (List<String>) claims.get("roles");
     }
 
     /**
-     * Valida un token JWT.
+     * Extrae los permisos del token
      *
-     * @param token Token a validar
-     * @return true si el token es válido
+     * @param token token JWT
+     * @return lista de permisos
      */
-    public boolean validateToken(String token) {
+    @SuppressWarnings("unchecked")
+    public List<String> obtenerPermisosDelToken(String token) {
+        Claims claims = extraerClaims(token);
+        return (List<String>) claims.get("permisos");
+    }
+
+    /**
+     * Valida un token JWT
+     *
+     * @param token token a validar
+     * @return true si es válido
+     */
+    public boolean validarToken(String token) {
         try {
             Jwts.parser()
-                    .verifyWith(secretKey)
+                    .verifyWith(key)
                     .build()
                     .parseSignedClaims(token);
             return true;
-        } catch (SignatureException e) {
-            log.error("Firma JWT inválida: {}", e.getMessage());
         } catch (MalformedJwtException e) {
             log.error("Token JWT malformado: {}", e.getMessage());
         } catch (ExpiredJwtException e) {
@@ -157,49 +141,74 @@ public class JwtTokenProvider {
             log.error("Token JWT no soportado: {}", e.getMessage());
         } catch (IllegalArgumentException e) {
             log.error("JWT claims string está vacío: {}", e.getMessage());
+        } catch (Exception e) {
+            log.error("Error validando token JWT: {}", e.getMessage());
         }
         return false;
     }
 
     /**
-     * Obtiene la fecha de expiración de un token.
+     * Verifica si un token está expirado
      *
-     * @param token Token JWT
-     * @return Fecha de expiración
+     * @param token token a verificar
+     * @return true si está expirado
      */
-    public Date getExpirationDateFromToken(String token) {
-        Claims claims = Jwts.parser()
-                .verifyWith(secretKey)
-                .build()
-                .parseSignedClaims(token)
-                .getPayload();
-
-        return claims.getExpiration();
-    }
-
-    /**
-     * Verifica si un token ha expirado.
-     *
-     * @param token Token JWT
-     * @return true si el token ha expirado
-     */
-    public boolean isTokenExpired(String token) {
+    public boolean esTokenExpirado(String token) {
         try {
-            Date expiration = getExpirationDateFromToken(token);
-            return expiration.before(new Date());
+            Claims claims = extraerClaims(token);
+            return claims.getExpiration().before(new Date());
+        } catch (ExpiredJwtException e) {
+            return true;
         } catch (Exception e) {
+            log.error("Error verificando expiración del token: {}", e.getMessage());
             return true;
         }
     }
 
     /**
-     * Obtiene el tiempo restante antes de que expire un token (en milisegundos).
+     * Obtiene la fecha de expiración del token
      *
-     * @param token Token JWT
-     * @return Tiempo restante en milisegundos
+     * @param token token JWT
+     * @return fecha de expiración
      */
-    public long getTimeToExpiration(String token) {
-        Date expiration = getExpirationDateFromToken(token);
-        return expiration.getTime() - System.currentTimeMillis();
+    public Date obtenerFechaExpiracion(String token) {
+        Claims claims = extraerClaims(token);
+        return claims.getExpiration();
+    }
+
+    /**
+     * Obtiene el tiempo de expiración configurado en milisegundos
+     *
+     * @return tiempo de expiración
+     */
+    public long obtenerTiempoExpiracion() {
+        return jwtExpiration;
+    }
+
+    /**
+     * Extrae todos los claims del token
+     *
+     * @param token token JWT
+     * @return claims del token
+     */
+    private Claims extraerClaims(String token) {
+        return Jwts.parser()
+                .verifyWith(key)
+                .build()
+                .parseSignedClaims(token)
+                .getPayload();
+    }
+
+    /**
+     * Extrae el token del header Authorization
+     *
+     * @param authorizationHeader header Authorization
+     * @return token sin el prefijo Bearer
+     */
+    public String extraerTokenDelHeader(String authorizationHeader) {
+        if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
+            return authorizationHeader.substring(7);
+        }
+        return null;
     }
 }

@@ -1,17 +1,8 @@
 package com.veterinaria.presentation.controller;
 
-import com.veterinaria.application.dto.auth.LoginRequest;
-import com.veterinaria.application.dto.auth.LoginResponse;
-import com.veterinaria.application.dto.auth.RefreshTokenRequest;
-import com.veterinaria.application.dto.auth.RegisterRequest;
-import com.veterinaria.application.dto.usuario.UsuarioDTO;
-import com.veterinaria.application.service.AuthenticationService;
-import com.veterinaria.domain.entity.security.Usuario;
-import com.veterinaria.infrastructure.constants.SecurityConstants;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
-import io.swagger.v3.oas.annotations.tags.Tag;
+import com.veterinaria.application.service.ServicioAutenticacion;
+import com.veterinaria.infrastructure.security.jwt.JwtTokenProvider;
+import com.veterinaria.presentation.dto.auth.*;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -20,165 +11,244 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
+import java.util.Map;
+
 /**
- * Controller para endpoints de autenticación.
- * Maneja login, registro, refresh token y logout.
+ * Controlador REST para endpoints de autenticación.
+ * Maneja login, logout, cambio de contraseña, etc.
+ *
+ * @author Sistema Veterinaria
  */
-@RestController
-@RequestMapping("/auth")
-@RequiredArgsConstructor
 @Slf4j
-@Tag(name = "Autenticación", description = "Endpoints para autenticación y registro de usuarios")
+@RestController
+@RequestMapping("/api/auth")
+@RequiredArgsConstructor
 public class AuthController {
 
-    private final AuthenticationService authenticationService;
+    private final ServicioAutenticacion servicioAutenticacion;
+    private final JwtTokenProvider jwtTokenProvider;
 
     /**
-     * Endpoint de login.
+     * Endpoint de login
      *
-     * @param loginRequest Credenciales de usuario
-     * @return LoginResponse con tokens JWT
+     * POST /api/auth/login
      */
     @PostMapping("/login")
-    @Operation(summary = "Iniciar sesión", description = "Autentica un usuario y genera tokens JWT")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Login exitoso"),
-            @ApiResponse(responseCode = "401", description = "Credenciales inválidas"),
-            @ApiResponse(responseCode = "400", description = "Datos de entrada inválidos")
-    })
-    public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest loginRequest) {
-        log.info("POST /auth/login - Usuario: {}", loginRequest.getUsername());
+    public ResponseEntity<?> login(
+            @Valid @RequestBody LoginRequest request,
+            HttpServletRequest httpRequest) {
+        
+        try {
+            System.out.println("Esto es una prueba");
+            String direccionIP = servicioAutenticacion.obtenerDireccionIP(httpRequest);
+            LoginResponse response = servicioAutenticacion.login(request, direccionIP);
+            
+            log.info("Login exitoso para: {}", request.getEmail());
+            return ResponseEntity.ok(response);
+            
+        } catch (RuntimeException e) {
+            log.error("Error en login: {}", e.getMessage());
+            return ResponseEntity
+                    .status(HttpStatus.UNAUTHORIZED)
+                    .body(crearMensajeError(e.getMessage()));
+        }
+    }
 
-        LoginResponse response = authenticationService.login(loginRequest);
-
+    @GetMapping("/ping")
+    public ResponseEntity<?> ping() {
+        Map<String, Object> response = new HashMap<>();
+        response.put("mensaje", "AuthController funcionando correctamente 🚀");
+        response.put("timestamp", System.currentTimeMillis());
         return ResponseEntity.ok(response);
     }
 
-    /**
-     * Endpoint de registro de nuevos usuarios.
-     *
-     * @param registerRequest Datos del nuevo usuario
-     * @return Usuario creado
-     */
-    @PostMapping("/register")
-    @Operation(summary = "Registrar usuario", description = "Crea un nuevo usuario en el sistema")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "201", description = "Usuario creado exitosamente"),
-            @ApiResponse(responseCode = "409", description = "El usuario ya existe"),
-            @ApiResponse(responseCode = "400", description = "Datos de entrada inválidos")
-    })
-    public ResponseEntity<UsuarioDTO> register(@Valid @RequestBody RegisterRequest registerRequest) {
-        log.info("POST /auth/register - Usuario: {}", registerRequest.getUsername());
-
-        Usuario usuario = authenticationService.register(registerRequest);
-
-        UsuarioDTO usuarioDTO = convertirAUsuarioDTO(usuario);
-
-        return new ResponseEntity<>(usuarioDTO, HttpStatus.CREATED);
-    }
 
     /**
-     * Endpoint para refrescar el token JWT.
+     * Endpoint de logout
      *
-     * @param refreshTokenRequest Refresh token
-     * @return LoginResponse con nuevo token
-     */
-    @PostMapping("/refresh-token")
-    @Operation(summary = "Refrescar token", description = "Genera un nuevo token JWT usando el refresh token")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Token refrescado exitosamente"),
-            @ApiResponse(responseCode = "401", description = "Refresh token inválido o expirado")
-    })
-    public ResponseEntity<LoginResponse> refreshToken(
-            @Valid @RequestBody RefreshTokenRequest refreshTokenRequest) {
-        log.info("POST /auth/refresh-token");
-
-        LoginResponse response = authenticationService.refreshToken(refreshTokenRequest);
-
-        return ResponseEntity.ok(response);
-    }
-
-    /**
-     * Endpoint de logout.
-     *
-     * @param request HttpServletRequest para extraer el token
-     * @return Mensaje de confirmación
+     * POST /api/auth/logout
      */
     @PostMapping("/logout")
-    @Operation(summary = "Cerrar sesión", description = "Cierra la sesión actual del usuario")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Logout exitoso"),
-            @ApiResponse(responseCode = "401", description = "Token inválido")
-    })
-    public ResponseEntity<MessageResponse> logout(HttpServletRequest request) {
-        log.info("POST /auth/logout");
+    public ResponseEntity<?> logout(
+            @RequestBody(required = false) LogoutRequest request,
+            HttpServletRequest httpRequest) {
+        
+        try {
+            String authHeader = httpRequest.getHeader("Authorization");
+            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+                return ResponseEntity
+                        .status(HttpStatus.BAD_REQUEST)
+                        .body(crearMensajeError("Token no proporcionado"));
+            }
 
-        String token = extractTokenFromRequest(request);
+            String token = jwtTokenProvider.extraerTokenDelHeader(authHeader);
+            String direccionIP = servicioAutenticacion.obtenerDireccionIP(httpRequest);
 
-        if (token != null) {
-            authenticationService.logout(token);
+            LogoutRequest logoutRequest = request != null ? request : LogoutRequest.builder().build();
+            servicioAutenticacion.logout(token, logoutRequest, direccionIP);
+
+            log.info("Logout exitoso");
+            return ResponseEntity.ok(crearMensajeExito("Sesión cerrada exitosamente"));
+            
+        } catch (Exception e) {
+            log.error("Error en logout: {}", e.getMessage());
+            return ResponseEntity
+                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(crearMensajeError("Error al cerrar sesión"));
         }
-
-        return ResponseEntity.ok(new MessageResponse("Sesión cerrada exitosamente"));
     }
 
     /**
-     * Endpoint de validación de token.
+     * Endpoint para cambiar contraseña
      *
-     * @return Mensaje de confirmación
+     * POST /api/auth/cambiar-password
      */
-    @GetMapping("/validate")
-    @Operation(summary = "Validar token", description = "Valida si el token JWT actual es válido")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Token válido"),
-            @ApiResponse(responseCode = "401", description = "Token inválido")
-    })
-    public ResponseEntity<MessageResponse> validateToken() {
-        log.info("GET /auth/validate");
-        return ResponseEntity.ok(new MessageResponse("Token válido"));
-    }
+    @PostMapping("/cambiar-password")
+    public ResponseEntity<?> cambiarPassword(
+            @Valid @RequestBody CambiarPasswordRequest request,
+            HttpServletRequest httpRequest) {
+        
+        try {
+            // Obtener email del usuario autenticado desde el token
+            String authHeader = httpRequest.getHeader("Authorization");
+            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+                return ResponseEntity
+                        .status(HttpStatus.UNAUTHORIZED)
+                        .body(crearMensajeError("Usuario no autenticado"));
+            }
 
-    /**
-     * Extrae el token JWT del header Authorization.
-     */
-    private String extractTokenFromRequest(HttpServletRequest request) {
-        String bearerToken = request.getHeader(SecurityConstants.JWT_HEADER);
-        if (bearerToken != null && bearerToken.startsWith(SecurityConstants.JWT_PREFIX)) {
-            return bearerToken.substring(SecurityConstants.JWT_PREFIX.length());
+            String token = jwtTokenProvider.extraerTokenDelHeader(authHeader);
+            String email = jwtTokenProvider.obtenerEmailDelToken(token);
+            String direccionIP = servicioAutenticacion.obtenerDireccionIP(httpRequest);
+
+            servicioAutenticacion.cambiarPassword(email, request, direccionIP);
+
+            log.info("Contraseña cambiada exitosamente para: {}", email);
+            return ResponseEntity.ok(crearMensajeExito(
+                    "Contraseña cambiada exitosamente. Todas las sesiones han sido cerradas."));
+            
+        } catch (RuntimeException e) {
+            log.error("Error cambiando contraseña: {}", e.getMessage());
+            return ResponseEntity
+                    .status(HttpStatus.BAD_REQUEST)
+                    .body(crearMensajeError(e.getMessage()));
         }
-        return null;
     }
 
     /**
-     * Convierte una entidad Usuario a UsuarioDTO.
+     * Endpoint para validar token
+     *
+     * GET /api/auth/validar
      */
-    private UsuarioDTO convertirAUsuarioDTO(Usuario usuario) {
-        return UsuarioDTO.builder()
-                .id(usuario.getId())
-                .username(usuario.getUsername())
-                .email(usuario.getEmail())
-                .nombre(usuario.getNombre())
-                .apellido(usuario.getApellido())
-                .nombreCompleto(usuario.getNombreCompleto())
-                .dni(usuario.getDni())
-                .telefono(usuario.getTelefono())
-                .direccion(usuario.getDireccion())
-                .tipoUsuario(usuario.getTipoUsuario())
-                .roles(usuario.getRoles().stream()
-                        .map(rol -> rol.getNombre())
-                        .collect(java.util.stream.Collectors.toSet()))
-                .cuentaBloqueada(usuario.getCuentaBloqueada())
-                .isActive(usuario.getIsActive())
-                .createdAt(usuario.getCreatedAt())
-                .build();
+    @GetMapping("/validar")
+    public ResponseEntity<?> validarToken(HttpServletRequest httpRequest) {
+        try {
+            String authHeader = httpRequest.getHeader("Authorization");
+            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+                return ResponseEntity
+                        .status(HttpStatus.UNAUTHORIZED)
+                        .body(crearMensajeError("Token no proporcionado"));
+            }
+
+            String token = jwtTokenProvider.extraerTokenDelHeader(authHeader);
+            
+            if (jwtTokenProvider.validarToken(token)) {
+                String email = jwtTokenProvider.obtenerEmailDelToken(token);
+                Map<String, Object> response = new HashMap<>();
+                response.put("valido", true);
+                response.put("email", email);
+                response.put("expiracion", jwtTokenProvider.obtenerFechaExpiracion(token));
+                return ResponseEntity.ok(response);
+            } else {
+                return ResponseEntity
+                        .status(HttpStatus.UNAUTHORIZED)
+                        .body(crearMensajeError("Token inválido o expirado"));
+            }
+            
+        } catch (Exception e) {
+            log.error("Error validando token: {}", e.getMessage());
+            return ResponseEntity
+                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(crearMensajeError("Error al validar token"));
+        }
     }
 
     /**
-     * Clase interna para respuestas de mensajes simples.
+     * Endpoint para obtener información del usuario autenticado
+     *
+     * GET /api/auth/me
      */
-    @lombok.Data
-    @lombok.AllArgsConstructor
-    public static class MessageResponse {
-        private String message;
+    @GetMapping("/me")
+    public ResponseEntity<?> obtenerUsuarioActual(HttpServletRequest httpRequest) {
+        try {
+            return servicioAutenticacion.obtenerUsuarioAutenticado(httpRequest)
+                    .map(usuario -> {
+                        Map<String, Object> response = new HashMap<>();
+                        response.put("email", usuario.getEmail());
+                        response.put("nombreCompleto", usuario.getNombreCompleto());
+                        response.put("username", usuario.getUsername());
+                        response.put("roles", usuario.getRoles().stream()
+                                .map(rol -> rol.getNombre()).toList());
+                        return ResponseEntity.ok(response);
+                    })
+                    .orElseGet(() -> ResponseEntity
+                            .status(HttpStatus.UNAUTHORIZED)
+                            .body(crearMensajeError("Usuario no autenticado")));
+                            
+        } catch (Exception e) {
+            log.error("Error obteniendo usuario actual: {}", e.getMessage());
+            return ResponseEntity
+                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(crearMensajeError("Error al obtener información del usuario"));
+        }
+    }
+
+    /**
+     * Endpoint para solicitar recuperación de contraseña
+     *
+     * POST /api/auth/recuperar-password
+     */
+    @PostMapping("/recuperar-password")
+    public ResponseEntity<?> recuperarPassword(
+            @Valid @RequestBody RecuperarPasswordRequest request) {
+        
+        try {
+            // TODO: Implementar lógica de recuperación de contraseña
+            // 1. Generar token de recuperación
+            // 2. Enviar email con enlace de recuperación
+            // 3. Guardar token temporalmente
+            
+            log.info("Solicitud de recuperación de contraseña para: {}", request.getEmail());
+            
+            return ResponseEntity.ok(crearMensajeExito(
+                    "Si el email existe, recibirás instrucciones para recuperar tu contraseña"));
+                    
+        } catch (Exception e) {
+            log.error("Error en recuperación de contraseña: {}", e.getMessage());
+            // No revelar si el email existe por seguridad
+            return ResponseEntity.ok(crearMensajeExito(
+                    "Si el email existe, recibirás instrucciones para recuperar tu contraseña"));
+        }
+    }
+
+    /**
+     * Crea un mensaje de error estándar
+     */
+    private Map<String, Object> crearMensajeError(String mensaje) {
+        Map<String, Object> response = new HashMap<>();
+        response.put("error", true);
+        response.put("mensaje", mensaje);
+        return response;
+    }
+
+    /**
+     * Crea un mensaje de éxito estándar
+     */
+    private Map<String, Object> crearMensajeExito(String mensaje) {
+        Map<String, Object> response = new HashMap<>();
+        response.put("error", false);
+        response.put("mensaje", mensaje);
+        return response;
     }
 }
