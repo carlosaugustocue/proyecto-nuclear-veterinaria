@@ -36,6 +36,7 @@ public class DataLoader implements CommandLineRunner {
     private final RolRepository rolRepository;
     private final UsuarioRepository usuarioRepository;
     private final RazaRepository razaRepository;
+    private final com.veterinaria.application.repository.TipoServicioRepository tipoServicioRepository;
     private final EncriptadorContrasena encriptadorContrasena;
 
     @Override
@@ -59,6 +60,10 @@ public class DataLoader implements CommandLineRunner {
             // 4. Crear catálogo de razas predefinidas
             crearRazasPredefinidas();
             log.info("Catálogo de razas predefinidas creado");
+
+            // 5. Crear tipos de servicio predefinidos
+            crearTiposServicioPredefinidos();
+            log.info("Tipos de servicio predefinidos creados");
 
             log.info("Carga de datos iniciales completada exitosamente");
 
@@ -405,6 +410,285 @@ public class DataLoader implements CommandLineRunner {
                             .build();
                     raza.setIsActive(true);
                     return razaRepository.save(raza);
+                });
+    }
+
+    /**
+     * Crea catálogo predefinido de tipos de servicio veterinarios.
+     * Implementa servicios comunes ofrecidos en la clínica.
+     */
+    private void crearTiposServicioPredefinidos() {
+        // Solo cargar si no existen tipos de servicio
+        if (tipoServicioRepository.count() > 0) {
+            log.info("Tipos de servicio ya existen, omitiendo creación");
+            return;
+        }
+
+        log.info("Creando tipos de servicio predefinidos...");
+
+        // CONSULTAS
+        crearTipoServicio(
+                "Consulta General",
+                "Consulta médica veterinaria general",
+                30,  // 30 minutos
+                50000.0,
+                "Consultas",
+                false
+        );
+
+        crearTipoServicio(
+                "Consulta Especializada",
+                "Consulta con veterinario especialista",
+                45,  // 45 minutos
+                80000.0,
+                "Consultas",
+                true
+        );
+
+        crearTipoServicio(
+                "Control Post-operatorio",
+                "Revisión médica después de cirugía",
+                20,  // 20 minutos
+                30000.0,
+                "Consultas",
+                false
+        );
+
+        crearTipoServicio(
+                "Control de Salud",
+                "Chequeo general preventivo",
+                25,  // 25 minutos
+                40000.0,
+                "Consultas",
+                false
+        );
+
+        // VACUNACIÓN Y PREVENCIÓN
+        crearTipoServicio(
+                "Vacunación Múltiple",
+                "Aplicación de vacunas preventivas",
+                15,  // 15 minutos
+                35000.0,
+                "Prevención",
+                false
+        );
+
+        crearTipoServicio(
+                "Vacunación Antirrábica",
+                "Vacuna contra la rabia",
+                10,  // 10 minutos
+                25000.0,
+                "Prevención",
+                false
+        );
+
+        crearTipoServicio(
+                "Desparasitación Interna",
+                "Tratamiento antiparasitario interno",
+                10,  // 10 minutos
+                20000.0,
+                "Prevención",
+                false
+        );
+
+        crearTipoServicio(
+                "Desparasitación Externa",
+                "Tratamiento contra pulgas y garrapatas",
+                10,  // 10 minutos
+                20000.0,
+                "Prevención",
+                false
+        );
+
+        // CIRUGÍAS
+        crearTipoServicio(
+                "Esterilización/Castración",
+                "Cirugía de esterilización o castración",
+                120,  // 2 horas
+                150000.0,
+                "Cirugía",
+                true
+        );
+
+        crearTipoServicio(
+                "Cirugía Menor",
+                "Procedimiento quirúrgico menor",
+                60,  // 1 hora
+                100000.0,
+                "Cirugía",
+                true
+        );
+
+        crearTipoServicio(
+                "Cirugía Mayor",
+                "Procedimiento quirúrgico complejo",
+                180,  // 3 horas
+                300000.0,
+                "Cirugía",
+                true
+        );
+
+        crearTipoServicio(
+                "Limpieza Dental",
+                "Profilaxis dental con sedación",
+                90,  // 1.5 horas
+                120000.0,
+                "Cirugía",
+                true
+        );
+
+        // DIAGNÓSTICO
+        crearTipoServicio(
+                "Radiografía",
+                "Estudio radiográfico",
+                30,  // 30 minutos
+                60000.0,
+                "Diagnóstico",
+                false
+        );
+
+        crearTipoServicio(
+                "Ecografía",
+                "Estudio ecográfico",
+                45,  // 45 minutos
+                80000.0,
+                "Diagnóstico",
+                false
+        );
+
+        crearTipoServicio(
+                "Análisis de Sangre Completo",
+                "Hemograma y química sanguínea",
+                15,  // 15 minutos (toma de muestra)
+                70000.0,
+                "Diagnóstico",
+                false
+        );
+
+        crearTipoServicio(
+                "Análisis de Orina",
+                "Urianálisis completo",
+                10,  // 10 minutos (toma de muestra)
+                40000.0,
+                "Diagnóstico",
+                false
+        );
+
+        // ESTÉTICA
+        crearTipoServicio(
+                "Baño Medicado",
+                "Baño terapéutico con champú medicado",
+                45,  // 45 minutos
+                40000.0,
+                "Estética",
+                false
+        );
+
+        crearTipoServicio(
+                "Baño Básico",
+                "Baño e higiene básica",
+                30,  // 30 minutos
+                30000.0,
+                "Estética",
+                false
+        );
+
+        crearTipoServicio(
+                "Peluquería Completa",
+                "Corte, baño y arreglo completo",
+                60,  // 1 hora
+                50000.0,
+                "Estética",
+                false
+        );
+
+        crearTipoServicio(
+                "Corte de Uñas",
+                "Recorte de uñas",
+                15,  // 15 minutos
+                15000.0,
+                "Estética",
+                false
+        );
+
+        // HOSPITALIZACIÓN
+        crearTipoServicio(
+                "Hospitalización 24h",
+                "Internación con monitoreo 24 horas",
+                1440,  // 24 horas en minutos
+                80000.0,
+                "Hospitalización",
+                true
+        );
+
+        crearTipoServicio(
+                "Terapia de Fluidos",
+                "Fluidoterapia endovenosa",
+                60,  // 1 hora
+                50000.0,
+                "Hospitalización",
+                false
+        );
+
+        // URGENCIAS
+        crearTipoServicio(
+                "Urgencia Veterinaria",
+                "Atención de emergencia médica",
+                30,  // 30 minutos
+                100000.0,
+                "Urgencias",
+                false
+        );
+
+        crearTipoServicio(
+                "Urgencia Crítica",
+                "Atención de emergencia crítica",
+                60,  // 1 hora
+                150000.0,
+                "Urgencias",
+                false
+        );
+
+        // OTROS SERVICIOS
+        crearTipoServicio(
+                "Colocación de Microchip",
+                "Implantación de microchip de identificación",
+                15,  // 15 minutos
+                35000.0,
+                "Otros",
+                false
+        );
+
+        crearTipoServicio(
+                "Eutanasia",
+                "Eutanasia humanitaria",
+                30,  // 30 minutos
+                80000.0,
+                "Otros",
+                true
+        );
+
+        log.info("Tipos de servicio predefinidos creados exitosamente");
+    }
+
+    /**
+     * Crea un tipo de servicio si no existe
+     */
+    private void crearTipoServicio(String nombre, String descripcion, Integer duracionEstimada,
+                                   Double precioBase, String categoria, Boolean requiereConfirmacion) {
+        tipoServicioRepository.findByNombre(nombre)
+                .orElseGet(() -> {
+                    com.veterinaria.domain.entity.appointments.TipoServicio servicio =
+                            com.veterinaria.domain.entity.appointments.TipoServicio.builder()
+                            .nombre(nombre)
+                            .descripcion(descripcion)
+                            .duracionEstimada(duracionEstimada)
+                            .precioBase(precioBase)
+                            .categoria(categoria)
+                            .requiereConfirmacion(requiereConfirmacion)
+                            .build();
+                    servicio.setIsActive(true);
+                    return tipoServicioRepository.save(servicio);
                 });
     }
 }
