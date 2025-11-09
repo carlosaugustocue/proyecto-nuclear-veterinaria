@@ -97,11 +97,57 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.DELETE, "/api/citas/**").hasAuthority("CITAS_CANCELAR")
                         .requestMatchers(HttpMethod.GET, "/api/citas/**").hasAuthority("CITAS_VER")
                         
-                        // Endpoints de historial clínico
+                        // Endpoints de historial clínico (legacy)
                         .requestMatchers(HttpMethod.POST, "/api/historial").hasAuthority("HISTORIAL_CREAR")
                         .requestMatchers(HttpMethod.PUT, "/api/historial/**").hasAuthority("HISTORIAL_EDITAR")
                         .requestMatchers(HttpMethod.GET, "/api/historial/**").hasAuthority("HISTORIAL_VER")
-                        
+
+                        // ==================== MÓDULO MÉDICO (V1) ====================
+
+                        // Endpoints de Historiales Clínicos
+                        .requestMatchers(HttpMethod.POST, "/api/v1/historiales-clinicos/**").hasAuthority("HISTORIAL_CREAR")
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/historiales-clinicos/**").hasAuthority("HISTORIAL_EDITAR")
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/historiales-clinicos/**").hasAuthority("HISTORIAL_ELIMINAR")
+                        .requestMatchers(HttpMethod.GET, "/api/v1/historiales-clinicos/**").hasAuthority("HISTORIAL_VER")
+
+                        // Endpoints de Consultas Médicas
+                        .requestMatchers(HttpMethod.POST, "/api/v1/consultas").hasAuthority("CONSULTAS_CREAR")
+                        .requestMatchers(HttpMethod.POST, "/api/v1/consultas/*/diagnosticos").hasAuthority("DIAGNOSTICOS_CREAR")
+                        .requestMatchers(HttpMethod.POST, "/api/v1/consultas/*/tratamientos").hasAuthority("TRATAMIENTOS_CREAR")
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/consultas/**").hasAuthority("CONSULTAS_EDITAR")
+                        .requestMatchers(HttpMethod.PATCH, "/api/v1/consultas/*/finalizar").hasAuthority("CONSULTAS_FINALIZAR")
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/consultas/**").hasAuthority("CONSULTAS_ELIMINAR")
+                        .requestMatchers(HttpMethod.GET, "/api/v1/consultas/**").hasAuthority("CONSULTAS_VER")
+
+                        // Endpoints de Diagnósticos
+                        .requestMatchers(HttpMethod.POST, "/api/v1/diagnosticos").hasAuthority("DIAGNOSTICOS_CREAR")
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/diagnosticos/**").hasAuthority("DIAGNOSTICOS_ELIMINAR")
+                        .requestMatchers(HttpMethod.GET, "/api/v1/diagnosticos/**").hasAuthority("DIAGNOSTICOS_VER")
+
+                        // Endpoints de Tratamientos
+                        .requestMatchers(HttpMethod.POST, "/api/v1/tratamientos").hasAuthority("TRATAMIENTOS_CREAR")
+                        .requestMatchers(HttpMethod.PATCH, "/api/v1/tratamientos/*/suspender").hasAuthority("TRATAMIENTOS_EDITAR")
+                        .requestMatchers(HttpMethod.PATCH, "/api/v1/tratamientos/*/calcular-fecha-fin").hasAuthority("TRATAMIENTOS_EDITAR")
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/tratamientos/**").hasAuthority("TRATAMIENTOS_ELIMINAR")
+                        .requestMatchers(HttpMethod.GET, "/api/v1/tratamientos/**").hasAuthority("TRATAMIENTOS_VER")
+
+                        // Endpoints de Vacunas
+                        .requestMatchers(HttpMethod.POST, "/api/v1/vacunas").hasAuthority("VACUNAS_REGISTRAR")
+                        .requestMatchers(HttpMethod.PATCH, "/api/v1/vacunas/*/calcular-proxima-dosis").hasAuthority("VACUNAS_EDITAR")
+                        .requestMatchers(HttpMethod.PATCH, "/api/v1/vacunas/*/completar-serie").hasAuthority("VACUNAS_EDITAR")
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/vacunas/**").hasAuthority("VACUNAS_ELIMINAR")
+                        .requestMatchers(HttpMethod.GET, "/api/v1/vacunas/**").hasAuthority("VACUNAS_VER")
+
+                        // Endpoints de Exámenes Médicos
+                        .requestMatchers(HttpMethod.POST, "/api/v1/examenes").hasAuthority("EXAMENES_SOLICITAR")
+                        .requestMatchers(HttpMethod.PATCH, "/api/v1/examenes/*/resultados").hasAuthority("EXAMENES_REGISTRAR_RESULTADOS")
+                        .requestMatchers(HttpMethod.PATCH, "/api/v1/examenes/*/marcar-realizado").hasAuthority("EXAMENES_EDITAR")
+                        .requestMatchers(HttpMethod.PATCH, "/api/v1/examenes/*/cancelar").hasAuthority("EXAMENES_CANCELAR")
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/examenes/**").hasAuthority("EXAMENES_ELIMINAR")
+                        .requestMatchers(HttpMethod.GET, "/api/v1/examenes/**").hasAuthority("EXAMENES_VER")
+
+                        // ==================== FIN MÓDULO MÉDICO ====================
+
                         // Endpoints de inventario
                         .requestMatchers(HttpMethod.POST, "/api/inventario").hasAuthority("INVENTARIO_INGRESAR")
                         .requestMatchers(HttpMethod.PUT, "/api/inventario/**").hasAuthority("INVENTARIO_ASIGNAR")
