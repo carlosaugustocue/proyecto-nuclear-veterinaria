@@ -1,5 +1,6 @@
 package com.veterinaria.presentation.exception;
 
+import com.veterinaria.application.exception.BusinessRuleException;
 import com.veterinaria.infrastructure.exception.BusinessException;
 import com.veterinaria.infrastructure.exception.DuplicateResourceException;
 import com.veterinaria.infrastructure.exception.ResourceNotFoundException;
@@ -58,7 +59,7 @@ public class GlobalExceptionHandler {
     }
 
     /**
-     * Maneja ResourceNotFoundException.
+     * Maneja ResourceNotFoundException (infrastructure).
      */
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleResourceNotFoundException(
@@ -76,6 +77,48 @@ public class GlobalExceptionHandler {
         log.warn("Resource not found: {}", ex.getMessage());
 
         return new ResponseEntity<>(errorResponse, HttpStatus.NOT_FOUND);
+    }
+
+    /**
+     * Maneja ResourceNotFoundException (application).
+     */
+    @ExceptionHandler(com.veterinaria.application.exception.ResourceNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleApplicationResourceNotFoundException(
+            com.veterinaria.application.exception.ResourceNotFoundException ex,
+            WebRequest request) {
+
+        ErrorResponse errorResponse = ErrorResponse.builder()
+                .timestamp(LocalDateTime.now())
+                .status(HttpStatus.NOT_FOUND.value())
+                .error("Not Found")
+                .message(ex.getMessage())
+                .path(request.getDescription(false).replace("uri=", ""))
+                .build();
+
+        log.warn("Resource not found: {}", ex.getMessage());
+
+        return new ResponseEntity<>(errorResponse, HttpStatus.NOT_FOUND);
+    }
+
+    /**
+     * Maneja BusinessRuleException.
+     */
+    @ExceptionHandler(BusinessRuleException.class)
+    public ResponseEntity<ErrorResponse> handleBusinessRuleException(
+            BusinessRuleException ex,
+            WebRequest request) {
+
+        ErrorResponse errorResponse = ErrorResponse.builder()
+                .timestamp(LocalDateTime.now())
+                .status(HttpStatus.BAD_REQUEST.value())
+                .error("Business Rule Violation")
+                .message(ex.getMessage())
+                .path(request.getDescription(false).replace("uri=", ""))
+                .build();
+
+        log.warn("Business rule violation: {}", ex.getMessage());
+
+        return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
     }
 
     /**
@@ -221,6 +264,27 @@ public class GlobalExceptionHandler {
                 .build();
 
         log.warn("Illegal argument: {}", ex.getMessage());
+
+        return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
+    }
+
+    /**
+     * Maneja IllegalStateException.
+     */
+    @ExceptionHandler(IllegalStateException.class)
+    public ResponseEntity<ErrorResponse> handleIllegalStateException(
+            IllegalStateException ex,
+            WebRequest request) {
+
+        ErrorResponse errorResponse = ErrorResponse.builder()
+                .timestamp(LocalDateTime.now())
+                .status(HttpStatus.BAD_REQUEST.value())
+                .error("Invalid State")
+                .message(ex.getMessage())
+                .path(request.getDescription(false).replace("uri=", ""))
+                .build();
+
+        log.warn("Illegal state: {}", ex.getMessage());
 
         return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
     }

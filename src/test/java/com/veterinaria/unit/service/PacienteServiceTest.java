@@ -137,9 +137,9 @@ class PacienteServiceTest {
             Sexo.MACHO,
             "Dorado",
             30.5,
-            "123456789",
-            "Paciente sano",
             null,
+            "Paciente sano",
+            "123456789",
             1L
         );
 

@@ -226,8 +226,15 @@ public class Consulta extends BaseAuditableEntity {
      * @return resumen de la consulta
      */
     public String obtenerResumen() {
-        return String.format("Consulta del %s - Motivo: %s - Diagnósticos: %d - Tratamientos: %d",
-                fechaConsulta, motivo, diagnosticos.size(), tratamientos.size());
+        StringBuilder resumen = new StringBuilder();
+        resumen.append(String.format("Consulta del %s - Motivo: %s - Diagnósticos: %d - Tratamientos: %d",
+                fechaConsulta, motivo, diagnosticos.size(), tratamientos.size()));
+
+        if (observaciones != null && !observaciones.isBlank()) {
+            resumen.append(" - Observaciones: ").append(observaciones);
+        }
+
+        return resumen.toString();
     }
 
     @Override

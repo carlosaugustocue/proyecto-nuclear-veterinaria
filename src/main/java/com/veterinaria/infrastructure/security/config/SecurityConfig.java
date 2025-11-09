@@ -148,13 +148,29 @@ public class SecurityConfig {
 
                         // ==================== FIN MÓDULO MÉDICO ====================
 
-                        // Endpoints de inventario
+                        // ==================== MÓDULO FACTURACIÓN (V1) ====================
+
+                        // Endpoints de Facturas
+                        .requestMatchers(HttpMethod.POST, "/api/v1/facturas").hasAuthority("FACTURAS_CREAR")
+                        .requestMatchers(HttpMethod.POST, "/api/v1/facturas/*/detalles").hasAuthority("FACTURAS_EDITAR")
+                        .requestMatchers(HttpMethod.POST, "/api/v1/facturas/*/descuentos").hasAuthority("FACTURAS_APLICAR_DESCUENTO")
+                        .requestMatchers(HttpMethod.POST, "/api/v1/facturas/*/pagos").hasAuthority("PAGOS_REGISTRAR")
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/facturas/**").hasAuthority("FACTURAS_EDITAR")
+                        .requestMatchers(HttpMethod.PATCH, "/api/v1/facturas/*/anular").hasAuthority("FACTURAS_ANULAR")
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/facturas/*/detalles/*").hasAuthority("FACTURAS_EDITAR")
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/facturas/*/descuentos/*").hasAuthority("FACTURAS_EDITAR")
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/facturas/**").hasAuthority("FACTURAS_ELIMINAR")
+                        .requestMatchers(HttpMethod.GET, "/api/v1/facturas/**").hasAuthority("FACTURAS_VER")
+
+                        // ==================== FIN MÓDULO FACTURACIÓN ====================
+
+                        // Endpoints de inventario (legacy)
                         .requestMatchers(HttpMethod.POST, "/api/inventario").hasAuthority("INVENTARIO_INGRESAR")
                         .requestMatchers(HttpMethod.PUT, "/api/inventario/**").hasAuthority("INVENTARIO_ASIGNAR")
                         .requestMatchers(HttpMethod.DELETE, "/api/inventario/**").hasAuthority("INVENTARIO_DAR_BAJA")
                         .requestMatchers(HttpMethod.GET, "/api/inventario/**").hasAuthority("INVENTARIO_VER")
-                        
-                        // Endpoints de facturación
+
+                        // Endpoints de facturación (legacy)
                         .requestMatchers(HttpMethod.POST, "/api/facturas").hasAuthority("FACTURA_CREAR")
                         .requestMatchers(HttpMethod.GET, "/api/facturas/**").hasAuthority("FACTURA_VER")
                         .requestMatchers(HttpMethod.DELETE, "/api/facturas/**").hasAuthority("FACTURA_ANULAR")

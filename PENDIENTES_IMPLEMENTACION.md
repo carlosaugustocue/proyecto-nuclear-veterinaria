@@ -49,7 +49,7 @@
    - 15+ endpoints REST
    - Transiciones de estado
 
-8. **Historial Clínico Médico** ⭐ NUEVO
+8. **Historial Clínico Médico**
    - **6 entidades principales** implementadas
    - SignosVitales como Embeddable
    - 30+ endpoints REST completos
@@ -60,7 +60,18 @@
    - **27 tests de integración** (Repositorio, Service, Controller)
    - Documentación completa en código
 
-**Entidades implementadas:**
+9. **Facturación** ⭐ NUEVO
+   - **4 entidades principales** implementadas
+   - Sistema completo de facturación electrónica
+   - Gestión de pagos y descuentos
+   - Estados de factura (PENDIENTE, PAGADA, PARCIAL, ANULADA, VENCIDA)
+   - 12+ endpoints REST completos
+   - Soft delete en todas las entidades
+   - Validaciones de negocio robustas
+   - **39 tests de integración** (Repositorio, Service, Controller)
+   - Documentación completa en código
+
+**Entidades de Historial Clínico implementadas:**
    - ✅ `HistorialClinico` - Historial médico del paciente
    - ✅ `Consulta` - Registro de cada visita médica
    - ✅ `Diagnostico` - Diagnósticos con CIE-10 opcional
@@ -69,7 +80,13 @@
    - ✅ `ExamenMedico` - Estudios y análisis clínicos
    - ✅ `SignosVitales` - Datos vitales embebidos
 
-**Funcionalidades implementadas:**
+**Entidades de Facturación implementadas:**
+   - ✅ `Factura` - Factura principal con estados
+   - ✅ `DetalleFactura` - Items/detalles de la factura
+   - ✅ `Pago` - Registro de pagos parciales y totales
+   - ✅ `Descuento` - Descuentos con tipo PORCENTAJE o MONTO_FIJO
+
+**Funcionalidades de Historial Clínico implementadas:**
    - ✅ CRUD completo de historiales clínicos
    - ✅ Gestión de consultas médicas
    - ✅ Registro de signos vitales (temperatura, peso, FC, FR)
@@ -83,50 +100,42 @@
    - ✅ Seguimientos médicos
    - ✅ Soft delete en todas las operaciones
 
-**Testing:**
+**Funcionalidades de Facturación implementadas:**
+   - ✅ CRUD completo de facturas
+   - ✅ Generar facturas con número único
+   - ✅ Agregar detalles/items a facturas
+   - ✅ Aplicar descuentos (porcentaje y monto fijo)
+   - ✅ Registrar pagos parciales y completos
+   - ✅ Cálculo automático de totales
+   - ✅ Estados de factura (PENDIENTE, PAGADA, PARCIAL, ANULADA, VENCIDA)
+   - ✅ Anular facturas con motivo
+   - ✅ Búsqueda por cliente, estado, fechas
+   - ✅ Reportes de facturas vencidas
+   - ✅ Validaciones de negocio robustas
+   - ✅ Soft delete en todas las operaciones
+
+**Testing de Historial Clínico:**
    - ✅ 12 tests de integración de repositorio
    - ✅ 8 tests de integración de servicio
    - ✅ 7 tests de integración de controller con seguridad
+   - ✅ Total: 27 tests de integración
+
+**Testing de Facturación:**
+   - ✅ 14 tests de integración de repositorio
+   - ✅ 14 tests de integración de servicio
+   - ✅ 11 tests de integración de controller con seguridad
+   - ✅ Total: 39 tests de integración
+
+**Configuración de Testing:**
    - ✅ Configuración de H2 para tests
    - ✅ Mocks con @WithMockUser
+   - ✅ application-test.properties configurado
 
 ---
 
 ## ❌ Módulos Pendientes
 
-### 1. **Facturación** (Alta Prioridad)
-
-**Descripción:** Sistema de facturación electrónica con gestión de pagos, descuentos y estados.
-
-**Componentes a implementar:**
-
-#### Entidades:
-- `Factura` (factura principal)
-- `DetalleFactura` (items de la factura)
-- `Pago` (registro de pagos)
-- `Descuento` (cupones y descuentos)
-- `MetodoPago` (efectivo, tarjeta, transferencia)
-
-#### Funcionalidades:
-- Generar factura desde cita completada
-- Agregar servicios y productos
-- Aplicar descuentos
-- Registrar pagos parciales/completos
-- Estados: Pendiente, Pagada, Parcial, Anulada
-- Generar PDF de factura
-- Enviar factura por email
-- Reportes de ventas
-
-#### Endpoints estimados: ~10-12
-
-#### Patrones sugeridos:
-- **Builder Pattern** para construcción de facturas
-- **Strategy Pattern** para cálculo de descuentos
-- **Template Method** para generación de documentos
-
----
-
-### 2. **Inventario** (Media Prioridad)
+### 1. **Inventario** (Alta Prioridad)
 
 **Descripción:** Control de stock de medicamentos, insumos y productos.
 
@@ -159,7 +168,7 @@
 
 ---
 
-### 3. **Reportes y Estadísticas** (Media Prioridad)
+### 2. **Reportes y Estadísticas** (Media Prioridad)
 
 **Descripción:** Generación de reportes para toma de decisiones.
 
@@ -201,7 +210,7 @@
 
 ---
 
-### 4. **Notificaciones y Recordatorios** (Baja Prioridad)
+### 3. **Notificaciones y Recordatorios** (Baja Prioridad)
 
 **Descripción:** Sistema de notificaciones automáticas.
 
@@ -235,31 +244,31 @@
 
 ---
 
-### 5. **Mejoras y Funcionalidades Adicionales**
+### 4. **Mejoras y Funcionalidades Adicionales**
 
-#### 6.1 **Búsqueda Avanzada** (Baja Prioridad)
+#### 4.1 **Búsqueda Avanzada** (Baja Prioridad)
 - Búsqueda global en toda la aplicación
 - Filtros combinados
 - Autocompletado
 
-#### 6.2 **Dashboard** (Media Prioridad)
+#### 4.2 **Dashboard** (Media Prioridad)
 - Panel principal con estadísticas
 - Gráficos de citas del día
 - Alertas importantes
 - Tareas pendientes
 
-#### 6.3 **Auditoría** (Baja Prioridad)
+#### 4.3 **Auditoría** (Baja Prioridad)
 - Registro completo de cambios
 - Quién, cuándo, qué cambió
 - Reportes de auditoría
 
-#### 6.4 **Configuración del Sistema** (Baja Prioridad)
+#### 4.4 **Configuración del Sistema** (Baja Prioridad)
 - Horarios de atención
 - Duración de citas por defecto
 - Configuración de emails
 - Logos y personalización
 
-#### 6.5 **Backup y Restauración** (Baja Prioridad)
+#### 4.5 **Backup y Restauración** (Baja Prioridad)
 - Backup automático de base de datos
 - Restauración de backups
 - Exportación de datos
@@ -276,13 +285,15 @@
    - Vacunación y exámenes
    - **27 tests de integración**
 
-### Sprint 2 (Próximo) - Monetización
-2. **Facturación** (3-4 días)
-   - Genera ingresos
-   - Control financiero
-   - Vinculado a servicios e inventario
+### ✅ Sprint 2 (COMPLETADO) - Monetización
+2. **Facturación** ✓
+   - Sistema completo de facturación electrónica
+   - Gestión de pagos y descuentos
+   - Estados de factura (PENDIENTE, PAGADA, PARCIAL, ANULADA, VENCIDA)
+   - **39 tests de integración**
+   - Control financiero robusto
 
-### Sprint 3 - Control de Recursos
+### Sprint 3 (Próximo) - Control de Recursos
 3. **Inventario** (3-4 días)
    - Control de medicamentos
    - Previene pérdidas
@@ -310,10 +321,10 @@
 
 ## 🎯 Estimación Total
 
-**Módulos pendientes:** 4 principales + mejoras
-**Tiempo estimado:** 12-17 días de desarrollo
-**Endpoints estimados:** ~40-45 adicionales
-**Entidades nuevas:** ~15-18
+**Módulos pendientes:** 3 principales + mejoras
+**Tiempo estimado:** 8-13 días de desarrollo
+**Endpoints estimados:** ~30-35 adicionales
+**Entidades nuevas:** ~11-14
 
 ---
 
@@ -327,14 +338,14 @@
 - Almacenamiento en la nube (AWS S3, Google Cloud Storage)
 
 ### Testing:
-- ✅ **27 tests de integración** implementados para Historial Clínico
-  - 12 tests de repositorio con @DataJpaTest
-  - 8 tests de servicio con @SpringBootTest
-  - 7 tests de controller con @WithMockUser
+- ✅ **66 tests de integración** implementados
+  - **Historial Clínico:** 27 tests (12 repositorio + 8 servicio + 7 controller)
+  - **Facturación:** 39 tests (14 repositorio + 14 servicio + 11 controller)
 - ✅ Configuración de H2 para tests
 - ✅ application-test.properties configurado
+- ✅ Tests con @DataJpaTest, @SpringBootTest y @WithMockUser
 - Objetivo: Coverage mínimo del 70%
-- Pendiente: Tests unitarios con Mockito
+- Pendiente: Más tests unitarios con Mockito
 
 ### Documentación:
 - Actualizar Swagger con cada módulo
@@ -347,42 +358,62 @@
 
 Cuando implementes un nuevo módulo, asegúrate de:
 
-- [x] Diseñar entidades con validaciones ✓ (Historial Clínico)
-- [x] Crear repositorios con queries personalizadas ✓ (Historial Clínico)
-- [x] Implementar DTOs (Request/Response) ✓ (Historial Clínico)
-- [x] Crear Mappers con MapStruct ✓ (Historial Clínico)
-- [x] Implementar Service con lógica de negocio ✓ (Historial Clínico)
-- [x] Crear Controller con endpoints REST ✓ (Historial Clínico)
-- [x] Agregar excepciones personalizadas si es necesario ✓ (Historial Clínico)
-- [x] Aplicar patrones de diseño apropiados ✓ (Historial Clínico)
+- [x] Diseñar entidades con validaciones ✓ (Historial Clínico, Facturación)
+- [x] Crear repositorios con queries personalizadas ✓ (Historial Clínico, Facturación)
+- [x] Implementar DTOs (Request/Response) ✓ (Historial Clínico, Facturación)
+- [x] Crear Mappers con MapStruct ✓ (Historial Clínico, Facturación)
+- [x] Implementar Service con lógica de negocio ✓ (Historial Clínico, Facturación)
+- [x] Crear Controller con endpoints REST ✓ (Historial Clínico, Facturación)
+- [x] Agregar excepciones personalizadas si es necesario ✓ (Historial Clínico, Facturación)
+- [x] Aplicar patrones de diseño apropiados ✓ (Historial Clínico, Facturación)
 - [ ] Documentar con Swagger
 - [ ] Agregar datos iniciales en DataLoader (si aplica)
-- [x] Configurar permisos en SecurityConfig ✓ (Historial Clínico)
-- [x] **Crear tests de integración** ✓ (Historial Clínico - 27 tests)
+- [x] Configurar permisos en SecurityConfig ✓ (Historial Clínico, Facturación)
+- [x] **Crear tests de integración** ✓ (Historial Clínico - 27 tests, Facturación - 39 tests)
 - [x] Actualizar este documento ✓
 
 ---
 
 ## 📈 Progreso del Proyecto
 
-**Última actualización:** 2025-11-08
-**Módulos completados:** 8/12 (67%)
-**Tests de integración:** 27 tests implementados
+**Última actualización:** 2025-11-09
+**Módulos completados:** 9/12 (75%) 🎉
+**Tests de integración:** 66 tests implementados
 **Coverage de tests:** En progreso
-**Próximo módulo:** Facturación
+**Próximo módulo:** Inventario
 
 ### Resumen de implementación reciente:
-- ✅ **Historial Clínico Médico** - 100% completado
-  - 6 entidades (HistorialClinico, Consulta, Diagnostico, Tratamiento, Vacuna, ExamenMedico)
-  - 30+ endpoints REST
-  - 27 tests de integración (Repository, Service, Controller)
-  - Soft delete implementado
-  - Queries optimizadas
-  - Seguridad configurada
+
+#### ✅ **Facturación** - 100% completado (Sprint 2)
+- 4 entidades (Factura, DetalleFactura, Pago, Descuento)
+- 12+ endpoints REST
+- 39 tests de integración (14 repositorio + 14 servicio + 11 controller)
+- Estados de factura completos (PENDIENTE, PAGADA, PARCIAL, ANULADA, VENCIDA)
+- Gestión de pagos y descuentos
+- Soft delete implementado
+- Validaciones de negocio robustas
+- Seguridad configurada
+
+#### ✅ **Historial Clínico Médico** - 100% completado (Sprint 1)
+- 6 entidades (HistorialClinico, Consulta, Diagnostico, Tratamiento, Vacuna, ExamenMedico)
+- 30+ endpoints REST
+- 27 tests de integración (12 repositorio + 8 servicio + 7 controller)
+- Soft delete implementado
+- Queries optimizadas
+- Seguridad configurada
 
 ### Archivos de testing creados:
+
+**Facturación:**
+- `FacturaRepositoryIntegrationTest.java` - 14 tests
+- `FacturaServiceIntegrationTest.java` - 14 tests
+- `FacturaControllerIntegrationTest.java` - 11 tests
+
+**Historial Clínico:**
 - `ConsultaRepositoryIntegrationTest.java` - 12 tests
 - `ConsultaServiceIntegrationTest.java` - 8 tests
 - `ConsultaControllerIntegrationTest.java` - 7 tests
+
+**Configuración:**
 - `AbstractIntegrationTest.java` - Clase base
 - `application-test.properties` - Configuración H2
