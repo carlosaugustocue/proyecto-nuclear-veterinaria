@@ -1,0 +1,29 @@
+{
+  "name": "veterinaria-frontend",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@mdi/font": "^7.4.47",
+    "@vueuse/core": "^14.0.0",
+    "axios": "^1.13.2",
+    "dayjs": "^1.11.19",
+    "pinia": "^3.0.4",
+    "sass": "^1.94.0",
+    "vue": "^3.5.24",
+    "vue-router": "^4.6.3",
+    "vuetify": "^3.10.10"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^6.0.1",
+    "vite": "^7.2.2"
+  },
+  "volta": {
+    "node": "20.19.4"
+  }
+}
