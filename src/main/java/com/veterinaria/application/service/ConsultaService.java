@@ -50,6 +50,13 @@ public interface ConsultaService {
     List<ConsultaDTO> listarPorPaciente(Long pacienteId);
 
     /**
+     * Lista consultas por historial clínico
+     * @param historialClinicoId ID del historial clínico
+     * @return lista de DTOs
+     */
+    List<ConsultaDTO> listarPorHistorialClinico(Long historialClinicoId);
+
+    /**
      * Lista consultas por veterinario
      * @param veterinarioId ID del veterinario
      * @return lista de DTOs

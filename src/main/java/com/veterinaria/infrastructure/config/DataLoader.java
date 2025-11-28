@@ -91,14 +91,30 @@ public class DataLoader implements CommandLineRunner {
                 crearPermiso(PermisosDelSistema.CITAS_REAGENDAR, "Reagendar citas", "CITAS"));
 
         // Permisos de HISTORIAL CLÍNICO
-        permisosMap.put(PermisosDelSistema.HISTORIAL_VER, 
+        permisosMap.put(PermisosDelSistema.HISTORIAL_VER,
                 crearPermiso(PermisosDelSistema.HISTORIAL_VER, "Ver historial clínico", "HISTORIAL"));
-        permisosMap.put(PermisosDelSistema.HISTORIAL_CREAR, 
+        permisosMap.put(PermisosDelSistema.HISTORIAL_CREAR,
                 crearPermiso(PermisosDelSistema.HISTORIAL_CREAR, "Crear historial clínico", "HISTORIAL"));
-        permisosMap.put(PermisosDelSistema.HISTORIAL_EDITAR, 
+        permisosMap.put(PermisosDelSistema.HISTORIAL_EDITAR,
                 crearPermiso(PermisosDelSistema.HISTORIAL_EDITAR, "Editar historial clínico", "HISTORIAL"));
-        permisosMap.put(PermisosDelSistema.HISTORIAL_EXPORTAR, 
+        permisosMap.put(PermisosDelSistema.HISTORIAL_EXPORTAR,
                 crearPermiso(PermisosDelSistema.HISTORIAL_EXPORTAR, "Exportar historial clínico", "HISTORIAL"));
+
+        // Permisos de CONSULTAS
+        permisosMap.put("CONSULTAS_CREAR",
+                crearPermiso("CONSULTAS_CREAR", "Crear consultas", "CONSULTAS"));
+        permisosMap.put("CONSULTAS_VER",
+                crearPermiso("CONSULTAS_VER", "Ver consultas", "CONSULTAS"));
+        permisosMap.put("CONSULTAS_EDITAR",
+                crearPermiso("CONSULTAS_EDITAR", "Editar consultas", "CONSULTAS"));
+        permisosMap.put("CONSULTAS_ELIMINAR",
+                crearPermiso("CONSULTAS_ELIMINAR", "Eliminar consultas", "CONSULTAS"));
+        permisosMap.put("CONSULTAS_FINALIZAR",
+                crearPermiso("CONSULTAS_FINALIZAR", "Finalizar consultas", "CONSULTAS"));
+        permisosMap.put("DIAGNOSTICOS_CREAR",
+                crearPermiso("DIAGNOSTICOS_CREAR", "Crear diagnósticos", "CONSULTAS"));
+        permisosMap.put("TRATAMIENTOS_CREAR",
+                crearPermiso("TRATAMIENTOS_CREAR", "Crear tratamientos", "CONSULTAS"));
 
         // Permisos de FACTURACIÓN (v1 - actualizados)
         permisosMap.put("FACTURAS_CREAR",
@@ -221,13 +237,21 @@ public class DataLoader implements CommandLineRunner {
                 permisos.get(PermisosDelSistema.HISTORIAL_CREAR),
                 permisos.get(PermisosDelSistema.HISTORIAL_EDITAR),
                 permisos.get(PermisosDelSistema.HISTORIAL_EXPORTAR),
+                // Permisos de CONSULTAS
+                permisos.get("CONSULTAS_VER"),
+                permisos.get("CONSULTAS_CREAR"),
+                permisos.get("CONSULTAS_EDITAR"),
+                permisos.get("CONSULTAS_FINALIZAR"),
+                permisos.get("DIAGNOSTICOS_CREAR"),
+                permisos.get("TRATAMIENTOS_CREAR"),
+                // Permisos de PACIENTES
                 permisos.get(PermisosDelSistema.PACIENTES_VER),
                 permisos.get(PermisosDelSistema.PACIENTES_CREAR),
                 permisos.get(PermisosDelSistema.PACIENTES_EDITAR),
                 permisos.get(PermisosDelSistema.CLIENTES_VER),
                 permisos.get(PermisosDelSistema.INVENTARIO_VER)
         );
-        rolesMap.put("ROLE_VETERINARIO", crearRol("ROLE_VETERINARIO", "Veterinario", 
+        rolesMap.put("ROLE_VETERINARIO", crearRol("ROLE_VETERINARIO", "Veterinario",
                 "Acceso a funciones médicas", permisosVeterinario));
 
         // ROL RECEPCIONISTA - Permisos administrativos básicos

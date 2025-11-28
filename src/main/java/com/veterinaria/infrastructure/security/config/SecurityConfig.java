@@ -61,7 +61,9 @@ public class SecurityConfig {
 
                 // Configurar autorización de peticiones
                 .authorizeHttpRequests(auth -> auth
-                        // Rutas públicas (sin autenticación)
+                        // ==================== RUTAS PÚBLICAS ====================
+
+                        // Autenticación y recuperación de contraseña
                         .requestMatchers("/api/auth/login", "/api/auth/recuperar-password").permitAll()
                         .requestMatchers("/api/public/**").permitAll()
 
@@ -69,135 +71,81 @@ public class SecurityConfig {
                         .requestMatchers("/swagger-ui/**", "/swagger-ui.html").permitAll()
                         .requestMatchers("/v3/api-docs/**", "/api-docs/**").permitAll()
                         .requestMatchers("/swagger-resources/**", "/webjars/**").permitAll()
-                        
+
                         // Health check de Actuator
                         .requestMatchers("/actuator/health").permitAll()
-                        
-                        // Endpoints de gestión de usuarios - requieren permisos específicos
-                        .requestMatchers(HttpMethod.POST, "/api/usuarios").hasAuthority("USUARIOS_CREAR")
-                        .requestMatchers(HttpMethod.PUT, "/api/usuarios/**").hasAuthority("USUARIOS_EDITAR")
-                        .requestMatchers(HttpMethod.DELETE, "/api/usuarios/**").hasAuthority("USUARIOS_ELIMINAR")
-                        .requestMatchers(HttpMethod.GET, "/api/usuarios/**").hasAuthority("USUARIOS_VER")
-                        
-                        // Endpoints de pacientes
-                        .requestMatchers(HttpMethod.POST, "/api/pacientes").hasAuthority("PACIENTES_CREAR")
-                        .requestMatchers(HttpMethod.PUT, "/api/pacientes/**").hasAuthority("PACIENTES_EDITAR")
-                        .requestMatchers(HttpMethod.DELETE, "/api/pacientes/**").hasAuthority("PACIENTES_ELIMINAR")
-                        .requestMatchers(HttpMethod.GET, "/api/pacientes/**").hasAuthority("PACIENTES_VER")
-                        
-                        // Endpoints de clientes
-                        .requestMatchers(HttpMethod.POST, "/api/clientes").hasAuthority("CLIENTES_CREAR")
-                        .requestMatchers(HttpMethod.PUT, "/api/clientes/**").hasAuthority("CLIENTES_EDITAR")
-                        .requestMatchers(HttpMethod.DELETE, "/api/clientes/**").hasAuthority("CLIENTES_ELIMINAR")
-                        .requestMatchers(HttpMethod.GET, "/api/clientes/**").hasAuthority("CLIENTES_VER")
-                        
-                        // Endpoints de citas
-                        .requestMatchers(HttpMethod.POST, "/api/citas").hasAuthority("CITAS_CREAR")
-                        .requestMatchers(HttpMethod.PUT, "/api/citas/**").hasAnyAuthority("CITAS_EDITAR", "CITAS_REAGENDAR")
-                        .requestMatchers(HttpMethod.DELETE, "/api/citas/**").hasAuthority("CITAS_CANCELAR")
-                        .requestMatchers(HttpMethod.GET, "/api/citas/**").hasAuthority("CITAS_VER")
-                        
-                        // Endpoints de historial clínico (legacy)
-                        .requestMatchers(HttpMethod.POST, "/api/historial").hasAuthority("HISTORIAL_CREAR")
-                        .requestMatchers(HttpMethod.PUT, "/api/historial/**").hasAuthority("HISTORIAL_EDITAR")
-                        .requestMatchers(HttpMethod.GET, "/api/historial/**").hasAuthority("HISTORIAL_VER")
 
-                        // ==================== MÓDULO MÉDICO (V1) ====================
+                        // ==================== MÓDULO ADMINISTRACIÓN ====================
 
-                        // Endpoints de Historiales Clínicos
-                        .requestMatchers(HttpMethod.POST, "/api/v1/historiales-clinicos/**").hasAuthority("HISTORIAL_CREAR")
-                        .requestMatchers(HttpMethod.PUT, "/api/v1/historiales-clinicos/**").hasAuthority("HISTORIAL_EDITAR")
-                        .requestMatchers(HttpMethod.DELETE, "/api/v1/historiales-clinicos/**").hasAuthority("HISTORIAL_ELIMINAR")
-                        .requestMatchers(HttpMethod.GET, "/api/v1/historiales-clinicos/**").hasAuthority("HISTORIAL_VER")
+                        // Gestión de usuarios - Solo ADMIN (ya tiene @PreAuthorize en controller)
+                        .requestMatchers("/api/usuarios/**").authenticated()
 
-                        // Endpoints de Consultas Médicas
-                        .requestMatchers(HttpMethod.POST, "/api/v1/consultas").hasAuthority("CONSULTAS_CREAR")
-                        .requestMatchers(HttpMethod.POST, "/api/v1/consultas/*/diagnosticos").hasAuthority("DIAGNOSTICOS_CREAR")
-                        .requestMatchers(HttpMethod.POST, "/api/v1/consultas/*/tratamientos").hasAuthority("TRATAMIENTOS_CREAR")
-                        .requestMatchers(HttpMethod.PUT, "/api/v1/consultas/**").hasAuthority("CONSULTAS_EDITAR")
-                        .requestMatchers(HttpMethod.PATCH, "/api/v1/consultas/*/finalizar").hasAuthority("CONSULTAS_FINALIZAR")
-                        .requestMatchers(HttpMethod.DELETE, "/api/v1/consultas/**").hasAuthority("CONSULTAS_ELIMINAR")
-                        .requestMatchers(HttpMethod.GET, "/api/v1/consultas/**").hasAuthority("CONSULTAS_VER")
+                        // Configuración del sistema - Solo ADMIN
+                        .requestMatchers("/api/config/**").hasRole("ADMIN")
 
-                        // Endpoints de Diagnósticos
-                        .requestMatchers(HttpMethod.POST, "/api/v1/diagnosticos").hasAuthority("DIAGNOSTICOS_CREAR")
-                        .requestMatchers(HttpMethod.DELETE, "/api/v1/diagnosticos/**").hasAuthority("DIAGNOSTICOS_ELIMINAR")
-                        .requestMatchers(HttpMethod.GET, "/api/v1/diagnosticos/**").hasAuthority("DIAGNOSTICOS_VER")
+                        // ==================== MÓDULO MÉDICO ====================
 
-                        // Endpoints de Tratamientos
-                        .requestMatchers(HttpMethod.POST, "/api/v1/tratamientos").hasAuthority("TRATAMIENTOS_CREAR")
-                        .requestMatchers(HttpMethod.PATCH, "/api/v1/tratamientos/*/suspender").hasAuthority("TRATAMIENTOS_EDITAR")
-                        .requestMatchers(HttpMethod.PATCH, "/api/v1/tratamientos/*/calcular-fecha-fin").hasAuthority("TRATAMIENTOS_EDITAR")
-                        .requestMatchers(HttpMethod.DELETE, "/api/v1/tratamientos/**").hasAuthority("TRATAMIENTOS_ELIMINAR")
-                        .requestMatchers(HttpMethod.GET, "/api/v1/tratamientos/**").hasAuthority("TRATAMIENTOS_VER")
+                        // Historiales Clínicos - ADMIN y VETERINARIO
+                        .requestMatchers("/api/v1/historiales-clinicos/**").hasAnyRole("ADMIN", "VETERINARIO")
+                        .requestMatchers("/api/historial/**").hasAnyRole("ADMIN", "VETERINARIO")
 
-                        // Endpoints de Vacunas
-                        .requestMatchers(HttpMethod.POST, "/api/v1/vacunas").hasAuthority("VACUNAS_REGISTRAR")
-                        .requestMatchers(HttpMethod.PATCH, "/api/v1/vacunas/*/calcular-proxima-dosis").hasAuthority("VACUNAS_EDITAR")
-                        .requestMatchers(HttpMethod.PATCH, "/api/v1/vacunas/*/completar-serie").hasAuthority("VACUNAS_EDITAR")
-                        .requestMatchers(HttpMethod.DELETE, "/api/v1/vacunas/**").hasAuthority("VACUNAS_ELIMINAR")
-                        .requestMatchers(HttpMethod.GET, "/api/v1/vacunas/**").hasAuthority("VACUNAS_VER")
+                        // Consultas Médicas - ADMIN y VETERINARIO
+                        .requestMatchers("/api/v1/consultas/**").hasAnyRole("ADMIN", "VETERINARIO")
 
-                        // Endpoints de Exámenes Médicos
-                        .requestMatchers(HttpMethod.POST, "/api/v1/examenes").hasAuthority("EXAMENES_SOLICITAR")
-                        .requestMatchers(HttpMethod.PATCH, "/api/v1/examenes/*/resultados").hasAuthority("EXAMENES_REGISTRAR_RESULTADOS")
-                        .requestMatchers(HttpMethod.PATCH, "/api/v1/examenes/*/marcar-realizado").hasAuthority("EXAMENES_EDITAR")
-                        .requestMatchers(HttpMethod.PATCH, "/api/v1/examenes/*/cancelar").hasAuthority("EXAMENES_CANCELAR")
-                        .requestMatchers(HttpMethod.DELETE, "/api/v1/examenes/**").hasAuthority("EXAMENES_ELIMINAR")
-                        .requestMatchers(HttpMethod.GET, "/api/v1/examenes/**").hasAuthority("EXAMENES_VER")
+                        // Diagnósticos - ADMIN y VETERINARIO
+                        .requestMatchers("/api/v1/diagnosticos/**").hasAnyRole("ADMIN", "VETERINARIO")
 
-                        // ==================== FIN MÓDULO MÉDICO ====================
+                        // Tratamientos - ADMIN y VETERINARIO
+                        .requestMatchers("/api/v1/tratamientos/**").hasAnyRole("ADMIN", "VETERINARIO")
 
-                        // ==================== MÓDULO FACTURACIÓN (V1) ====================
+                        // Vacunas - ADMIN y VETERINARIO
+                        .requestMatchers("/api/v1/vacunas/**").hasAnyRole("ADMIN", "VETERINARIO")
 
-                        // Endpoints de Facturas
-                        .requestMatchers(HttpMethod.POST, "/api/v1/facturas").hasAuthority("FACTURAS_CREAR")
-                        .requestMatchers(HttpMethod.POST, "/api/v1/facturas/*/detalles").hasAuthority("FACTURAS_EDITAR")
-                        .requestMatchers(HttpMethod.POST, "/api/v1/facturas/*/descuentos").hasAuthority("FACTURAS_APLICAR_DESCUENTO")
-                        .requestMatchers(HttpMethod.POST, "/api/v1/facturas/*/pagos").hasAuthority("PAGOS_REGISTRAR")
-                        .requestMatchers(HttpMethod.PUT, "/api/v1/facturas/**").hasAuthority("FACTURAS_EDITAR")
-                        .requestMatchers(HttpMethod.PATCH, "/api/v1/facturas/*/anular").hasAuthority("FACTURAS_ANULAR")
-                        .requestMatchers(HttpMethod.DELETE, "/api/v1/facturas/*/detalles/*").hasAuthority("FACTURAS_EDITAR")
-                        .requestMatchers(HttpMethod.DELETE, "/api/v1/facturas/*/descuentos/*").hasAuthority("FACTURAS_EDITAR")
-                        .requestMatchers(HttpMethod.DELETE, "/api/v1/facturas/**").hasAuthority("FACTURAS_ELIMINAR")
-                        .requestMatchers(HttpMethod.GET, "/api/v1/facturas/**").hasAuthority("FACTURAS_VER")
+                        // Exámenes Médicos - ADMIN y VETERINARIO
+                        .requestMatchers("/api/v1/examenes/**").hasAnyRole("ADMIN", "VETERINARIO")
 
-                        // ==================== FIN MÓDULO FACTURACIÓN ====================
+                        // ==================== MÓDULO PACIENTES ====================
 
-                        // ==================== MÓDULO INVENTARIO (V1) ====================
+                        // Pacientes - ADMIN, VETERINARIO y RECEPCIONISTA
+                        .requestMatchers("/api/pacientes/**").hasAnyRole("ADMIN", "VETERINARIO", "RECEPCIONISTA")
 
-                        // Endpoints de Productos
-                        .requestMatchers(HttpMethod.POST, "/api/v1/productos").hasAuthority("PRODUCTOS_CREAR")
-                        .requestMatchers(HttpMethod.PUT, "/api/v1/productos/**").hasAuthority("PRODUCTOS_EDITAR")
-                        .requestMatchers(HttpMethod.DELETE, "/api/v1/productos/**").hasAuthority("PRODUCTOS_ELIMINAR")
-                        .requestMatchers(HttpMethod.GET, "/api/v1/productos/**").hasAuthority("PRODUCTOS_VER")
+                        // ==================== MÓDULO CLIENTES ====================
 
-                        // Endpoints de Movimientos de Inventario
-                        .requestMatchers(HttpMethod.POST, "/api/v1/movimientos-inventario").hasAuthority("INVENTARIO_REGISTRAR_MOVIMIENTO")
-                        .requestMatchers(HttpMethod.GET, "/api/v1/movimientos-inventario/**").hasAuthority("INVENTARIO_VER_MOVIMIENTOS")
+                        // Clientes - ADMIN, VETERINARIO y RECEPCIONISTA
+                        .requestMatchers("/api/clientes/**").hasAnyRole("ADMIN", "VETERINARIO", "RECEPCIONISTA")
 
-                        // ==================== FIN MÓDULO INVENTARIO ====================
+                        // ==================== MÓDULO CITAS ====================
 
-                        // Endpoints de inventario (legacy)
-                        .requestMatchers(HttpMethod.POST, "/api/inventario").hasAuthority("INVENTARIO_INGRESAR")
-                        .requestMatchers(HttpMethod.PUT, "/api/inventario/**").hasAuthority("INVENTARIO_ASIGNAR")
-                        .requestMatchers(HttpMethod.DELETE, "/api/inventario/**").hasAuthority("INVENTARIO_DAR_BAJA")
-                        .requestMatchers(HttpMethod.GET, "/api/inventario/**").hasAuthority("INVENTARIO_VER")
+                        // Citas - ADMIN, VETERINARIO y RECEPCIONISTA
+                        .requestMatchers("/api/citas/**").hasAnyRole("ADMIN", "VETERINARIO", "RECEPCIONISTA")
 
-                        // Endpoints de facturación (legacy)
-                        .requestMatchers(HttpMethod.POST, "/api/facturas").hasAuthority("FACTURA_CREAR")
-                        .requestMatchers(HttpMethod.GET, "/api/facturas/**").hasAuthority("FACTURA_VER")
-                        .requestMatchers(HttpMethod.DELETE, "/api/facturas/**").hasAuthority("FACTURA_ANULAR")
-                        
-                        // Reportes
-                        .requestMatchers("/api/reportes/ventas/**").hasAuthority("REPORTES_VENTAS")
-                        .requestMatchers("/api/reportes/inventario/**").hasAuthority("REPORTES_INVENTARIO")
-                        .requestMatchers("/api/reportes/citas/**").hasAuthority("REPORTES_CITAS")
-                        .requestMatchers("/api/reportes/auditoria/**").hasAuthority("REPORTES_AUDITORIA")
-                        
-                        // Configuración del sistema - solo administradores
-                        .requestMatchers("/api/config/**").hasAuthority("CONFIG_EDITAR")
-                        
+                        // ==================== MÓDULO FACTURACIÓN ====================
+
+                        // Facturas V1 - ADMIN y RECEPCIONISTA
+                        .requestMatchers("/api/v1/facturas/**").hasAnyRole("ADMIN", "RECEPCIONISTA")
+
+                        // Facturas legacy - ADMIN y RECEPCIONISTA
+                        .requestMatchers("/api/facturas/**").hasAnyRole("ADMIN", "RECEPCIONISTA")
+
+                        // ==================== MÓDULO INVENTARIO ====================
+
+                        // Productos - ADMIN y VETERINARIO (pueden ver)
+                        .requestMatchers(HttpMethod.GET, "/api/v1/productos/**").hasAnyRole("ADMIN", "VETERINARIO", "RECEPCIONISTA")
+                        .requestMatchers("/api/v1/productos/**").hasRole("ADMIN")
+
+                        // Movimientos de Inventario - ADMIN
+                        .requestMatchers("/api/v1/movimientos-inventario/**").hasRole("ADMIN")
+
+                        // Inventario legacy - ADMIN
+                        .requestMatchers("/api/inventario/**").hasRole("ADMIN")
+
+                        // ==================== REPORTES ====================
+
+                        // Reportes - ADMIN y VETERINARIO
+                        .requestMatchers("/api/reportes/**").hasAnyRole("ADMIN", "VETERINARIO")
+
+                        // ==================== FALLBACK ====================
+
                         // Todas las demás peticiones requieren autenticación
                         .anyRequest().authenticated()
                 )

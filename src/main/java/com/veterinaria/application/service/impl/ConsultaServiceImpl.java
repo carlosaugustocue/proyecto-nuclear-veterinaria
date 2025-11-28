@@ -171,6 +171,14 @@ public class ConsultaServiceImpl implements ConsultaService {
     }
 
     @Override
+    public List<ConsultaDTO> listarPorHistorialClinico(Long historialClinicoId) {
+        log.debug("Listando consultas del historial clínico ID: {}", historialClinicoId);
+
+        List<Consulta> consultas = consultaRepository.findByHistorialClinicoId(historialClinicoId);
+        return consultaMapper.toDTOList(consultas);
+    }
+
+    @Override
     public List<ConsultaDTO> listarPorVeterinario(Long veterinarioId) {
         log.debug("Listando consultas del veterinario ID: {}", veterinarioId);
 

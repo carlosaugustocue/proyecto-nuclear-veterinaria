@@ -28,20 +28,21 @@ export const useHistorialesStore = defineStore('historiales', () => {
   }
 
   const createHistorial = async (pacienteId) => {
-    loading.value = true
-    error.value = null
-    try {
-      const response = await post('/v1/historiales-clinicos', { pacienteId })
-      currentHistorial.value = response.data
-      return currentHistorial.value
-    } catch (err) {
-      error.value = err.message || 'Error al crear historial'
-      console.error('Error creating historial:', err)
-      throw err
-    } finally {
-      loading.value = false
-    }
+  loading.value = true
+  error.value = null
+  try {
+    const response = await post(`/v1/historiales-clinicos/paciente/${pacienteId}`)
+    currentHistorial.value = response.data
+    return currentHistorial.value
+  } catch (err) {
+    error.value = err.message || 'Error al crear historial'
+    console.error('Error creating historial:', err)
+    throw err
+  } finally {
+    loading.value = false
   }
+}
+
 
   const fetchConsultasByHistorial = async (historialId) => {
     loading.value = true
@@ -59,13 +60,18 @@ export const useHistorialesStore = defineStore('historiales', () => {
     }
   }
 
-  const createConsulta = async (historialId, formData) => {
+  const createConsulta = async (historialId, formData, veterinarioId) => {
     loading.value = true
     error.value = null
     try {
       const response = await post(`/v1/consultas`, {
-        ...formData,
-        historialId
+        historialClinicoId: historialId,
+        veterinarioId: veterinarioId,
+        fechaConsulta: new Date().toISOString().split('T')[0], // Fecha actual en formato YYYY-MM-DD
+        motivo: formData.motivo,
+        diagnostico: formData.diagnostico || null,
+        tratamiento: formData.tratamiento || null,
+        observaciones: formData.observaciones || null
       })
       consultas.value.unshift(response.data)
       return response.data

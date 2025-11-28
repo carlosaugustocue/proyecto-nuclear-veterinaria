@@ -12,15 +12,33 @@
               <v-row>
                 <v-col cols="12" md="6">
                   <v-text-field
-                    v-model="form.nombre"
-                    label="Nombre Completo *"
+                    v-model="nombre"
+                    label="Nombre *"
                     :rules="[rules.required]"
                   ></v-text-field>
                 </v-col>
 
                 <v-col cols="12" md="6">
                   <v-text-field
-                    v-model="form.email"
+                    v-model="apellido"
+                    label="Apellido *"
+                    :rules="[rules.required]"
+                  ></v-text-field>
+                </v-col>
+              </v-row>
+
+              <v-row>
+                <v-col cols="12" md="6">
+                  <v-text-field
+                    v-model="dni"
+                    label="DNI *"
+                    :rules="[rules.required]"
+                  ></v-text-field>
+                </v-col>
+
+                <v-col cols="12" md="6">
+                  <v-text-field
+                    v-model="email"
                     label="Email *"
                     type="email"
                     :rules="[rules.required, rules.email]"
@@ -31,7 +49,7 @@
               <v-row>
                 <v-col cols="12" md="6">
                   <v-text-field
-                    v-model="form.telefono"
+                    v-model="telefono"
                     label="Teléfono *"
                     :rules="[rules.required]"
                   ></v-text-field>
@@ -39,17 +57,9 @@
 
                 <v-col cols="12" md="6">
                   <v-text-field
-                    v-model="form.documento"
-                    label="Documento"
-                  ></v-text-field>
-                </v-col>
-              </v-row>
-
-              <v-row>
-                <v-col cols="12">
-                  <v-text-field
-                    v-model="form.direccion"
-                    label="Dirección"
+                    v-model="direccion"
+                    label="Dirección *"
+                    :rules="[rules.required]"
                   ></v-text-field>
                 </v-col>
               </v-row>
@@ -57,15 +67,31 @@
               <v-row>
                 <v-col cols="12" md="6">
                   <v-text-field
-                    v-model="form.ciudad"
+                    v-model="ciudad"
                     label="Ciudad"
                   ></v-text-field>
                 </v-col>
 
                 <v-col cols="12" md="6">
                   <v-text-field
-                    v-model="form.departamento"
+                    v-model="departamento"
                     label="Departamento"
+                  ></v-text-field>
+                </v-col>
+              </v-row>
+
+              <v-row>
+                <v-col cols="12" md="6">
+                  <v-text-field
+                    v-model="codigoPostal"
+                    label="Código Postal"
+                  ></v-text-field>
+                </v-col>
+
+                <v-col cols="12" md="6">
+                  <v-text-field
+                    v-model="observaciones"
+                    label="Observaciones"
                   ></v-text-field>
                 </v-col>
               </v-row>
@@ -101,7 +127,7 @@
 </template>
 
 <script setup>
-import { onMounted, reactive, computed } from 'vue'
+import { onMounted, ref, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useClientesStore } from '@/stores/clientesStore'
 
@@ -112,15 +138,16 @@ const clientesStore = useClientesStore()
 const loading = computed(() => clientesStore.loading)
 const isEditing = computed(() => !!route.params.id)
 
-const form = reactive({
-  nombre: '',
-  email: '',
-  telefono: '',
-  documento: '',
-  direccion: '',
-  ciudad: '',
-  departamento: '',
-})
+const nombre = ref('')
+const apellido = ref('')
+const dni = ref('')
+const email = ref('')
+const telefono = ref('')
+const direccion = ref('')
+const ciudad = ref('')
+const departamento = ref('')
+const codigoPostal = ref('')
+const observaciones = ref('')
 
 const rules = {
   required: (v) => !!v || 'Este campo es requerido',
@@ -129,10 +156,23 @@ const rules = {
 
 const saveCliente = async () => {
   try {
+    const formData = {
+      nombre: nombre.value,
+      apellido: apellido.value,
+      dni: dni.value,
+      email: email.value,
+      telefono: telefono.value,
+      direccion: direccion.value,
+      ciudad: ciudad.value || null,
+      departamento: departamento.value || null,
+      codigoPostal: codigoPostal.value || null,
+      observaciones: observaciones.value || null,
+    }
+
     if (isEditing.value) {
-      await clientesStore.updateCliente(route.params.id, form)
+      await clientesStore.updateCliente(route.params.id, formData)
     } else {
-      await clientesStore.createCliente(form)
+      await clientesStore.createCliente(formData)
     }
     router.push('/clientes')
   } catch (error) {
@@ -146,7 +186,16 @@ onMounted(async () => {
       await clientesStore.fetchClienteById(route.params.id)
       const cliente = clientesStore.currentCliente
       if (cliente) {
-        Object.assign(form, cliente)
+        nombre.value = cliente.nombre || ''
+        apellido.value = cliente.apellido || ''
+        dni.value = cliente.dni || ''
+        email.value = cliente.email || ''
+        telefono.value = cliente.telefono || ''
+        direccion.value = cliente.direccion || ''
+        ciudad.value = cliente.ciudad || ''
+        departamento.value = cliente.departamento || ''
+        codigoPostal.value = cliente.codigoPostal || ''
+        observaciones.value = cliente.observaciones || ''
       }
     } catch (error) {
       console.error('Error al cargar cliente:', error)

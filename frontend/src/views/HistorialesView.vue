@@ -68,6 +68,16 @@
         <v-card-title class="bg-primary text-white">Nueva Consulta</v-card-title>
         <v-card-text class="pa-6">
           <v-form @submit.prevent="saveConsulta">
+            <v-autocomplete
+              v-model="consultaForm.veterinarioId"
+              :items="veterinarios"
+              item-title="nombre"
+              item-value="id"
+              label="Veterinario *"
+              :rules="[v => !!v || 'Requerido']"
+              prepend-icon="person"
+            ></v-autocomplete>
+
             <v-text-field
               v-model="consultaForm.motivo"
               label="Motivo de Consulta *"
@@ -113,10 +123,11 @@ import { useHistorialesStore } from '@/stores/historialesStore'
 import { useReferenceData } from '@/composables/useReferenceData'
 
 const historialesStore = useHistorialesStore()
-const { fetchPacientes } = useReferenceData()
+const { fetchPacientes, fetchUsuarios } = useReferenceData()
 
 const selectedPacienteId = ref(null)
 const pacientes = ref([])
+const veterinarios = ref([])
 const showNuevaConsulta = ref(false)
 
 const loading = computed(() => historialesStore.loading)
@@ -128,6 +139,7 @@ const consultaForm = reactive({
   diagnostico: '',
   tratamiento: '',
   observaciones: '',
+  veterinarioId: null,
 })
 
 const loadHistorial = async () => {
@@ -157,14 +169,23 @@ const loadHistorial = async () => {
 
 const saveConsulta = async () => {
   if (!currentHistorial.value) return
+  if (!consultaForm.veterinarioId) {
+    console.error('Debe seleccionar un veterinario')
+    return
+  }
   try {
-    await historialesStore.createConsulta(currentHistorial.value.id, consultaForm)
+    await historialesStore.createConsulta(
+      currentHistorial.value.id,
+      consultaForm,
+      consultaForm.veterinarioId
+    )
     showNuevaConsulta.value = false
     Object.assign(consultaForm, {
       motivo: '',
       diagnostico: '',
       tratamiento: '',
       observaciones: '',
+      veterinarioId: null,
     })
   } catch (error) {
     console.error('Error saving consulta:', error)
@@ -183,5 +204,6 @@ const formatDate = (dateString) => {
 
 onMounted(async () => {
   pacientes.value = await fetchPacientes()
+  veterinarios.value = await fetchUsuarios('VETERINARIO')
 })
 </script>

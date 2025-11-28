@@ -6,29 +6,33 @@ import { aliases, mdi } from 'vuetify/lib/iconsets/mdi'
 export default createVuetify({
   components,
   directives,
+
   theme: {
-    defaultTheme: 'light',
+    defaultTheme: 'humboldt',
     themes: {
-      light: {
+      humboldt: {
+        dark: false,
         colors: {
-          primary: '#2D5016',
-          secondary: '#8B7355',
-          accent: '#E8A87C',
-          error: '#D32F2F',
-          warning: '#F57C00',
-          info: '#0288D1',
-          success: '#388E3C',
-          surface: '#FFFFFF',
-          background: '#F5F5F5',
+          primary: '#083E6B',      // Azul institucional oscuro
+          secondary: '#0C5A96',    // Azul medio corporativo
+          accent: '#1C78BF',       // Azul claro (acciones suaves)
+          
+          background: '#F2F6FA',   // Fondo limpio y moderno
+          surface: '#FFFFFF',      // Formularios, cards
+
+          // Colores corporativos alternos (NO verdes ni amarillos)
+          success: '#0C5A96',      // Azul medio (feedback positivo)
+          info: '#1C78BF',         // Azul claro
+          warning: '#0C5A96',      // Aviso elegante sin estridencias
+          error: '#B71C1C',        // Rojo oscuro profesional
         },
       },
     },
   },
+
   icons: {
     defaultSet: 'mdi',
     aliases,
-    sets: {
-      mdi,
-    },
+    sets: { mdi },
   },
 })

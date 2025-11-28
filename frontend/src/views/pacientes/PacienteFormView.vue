@@ -8,11 +8,11 @@
           </v-card-title>
 
           <v-card-text class="pa-6">
-            <v-form @submit.prevent="savePaciente" ref="form">
+            <v-form @submit.prevent="savePaciente" ref="formRef">
               <v-row>
                 <v-col cols="12" md="6">
                   <v-text-field
-                    v-model="form.nombre"
+                    v-model="nombre"
                     label="Nombre del Paciente *"
                     :rules="[rules.required]"
                   ></v-text-field>
@@ -20,7 +20,7 @@
 
                 <v-col cols="12" md="6">
                   <v-select
-                    v-model="form.clienteId"
+                    v-model="clienteId"
                     label="Propietario *"
                     :items="clientes"
                     item-title="nombre"
@@ -33,7 +33,7 @@
               <v-row>
                 <v-col cols="12" md="6">
                   <v-select
-                    v-model="form.especie"
+                    v-model="especie"
                     label="Especie *"
                     :items="especieOptions"
                     item-title="title"
@@ -44,11 +44,12 @@
 
                 <v-col cols="12" md="6">
                   <v-select
-                    v-model="form.razaId"
+                    v-model="razaSeleccionada"
                     label="Raza"
                     :items="razas"
                     item-title="nombre"
                     item-value="id"
+                    clearable
                   ></v-select>
                 </v-col>
               </v-row>
@@ -56,7 +57,7 @@
               <v-row>
                 <v-col cols="12" md="6">
                   <v-text-field
-                    v-model="form.fechaNacimiento"
+                    v-model="fechaNacimiento"
                     label="Fecha de Nacimiento *"
                     type="date"
                     :rules="[rules.required]"
@@ -65,7 +66,7 @@
 
                 <v-col cols="12" md="6">
                   <v-select
-                    v-model="form.sexo"
+                    v-model="sexo"
                     label="Sexo *"
                     :items="sexoOptions"
                     item-title="title"
@@ -78,7 +79,7 @@
               <v-row>
                 <v-col cols="12" md="6">
                   <v-text-field
-                    v-model="form.peso"
+                    v-model="pesoKg"
                     label="Peso (kg)"
                     type="number"
                     step="0.1"
@@ -87,7 +88,7 @@
 
                 <v-col cols="12" md="6">
                   <v-text-field
-                    v-model="form.color"
+                    v-model="color"
                     label="Color"
                   ></v-text-field>
                 </v-col>
@@ -96,7 +97,7 @@
               <v-row>
                 <v-col cols="12">
                   <v-text-field
-                    v-model="form.microchip"
+                    v-model="microchip"
                     label="Microchip"
                   ></v-text-field>
                 </v-col>
@@ -105,7 +106,7 @@
               <v-row>
                 <v-col cols="12">
                   <v-textarea
-                    v-model="form.observaciones"
+                    v-model="observaciones"
                     label="Observaciones"
                     counter
                     maxlength="500"
@@ -154,24 +155,23 @@ const route = useRoute()
 const pacientesStore = usePacientesStore()
 const { fetchClientes, fetchRazas } = useReferenceData()
 
+const formRef = ref(null)
 const loading = computed(() => pacientesStore.loading)
 const isEditing = computed(() => !!route.params.id)
 
-const form = reactive({
-  nombre: '',
-  clienteId: null,
-  especie: null,
-  razaId: null,
-  fechaNacimiento: null,
-  sexo: null,
-  peso: null,
-  color: '',
-  microchip: '',
-  observaciones: '',
-})
+const nombre = ref('')
+const clienteId = ref(null)
+const especie = ref(null)
+const fechaNacimiento = ref(null)
+const sexo = ref(null)
+const pesoKg = ref(null)
+const color = ref('')
+const microchip = ref('')
+const observaciones = ref('')
 
 const clientes = ref([])
 const razas = ref([])
+const razaSeleccionada = ref(null)
 const especieOptions = [
   { title: 'Perro', value: 'PERRO' },
   { title: 'Gato', value: 'GATO' },
@@ -204,7 +204,22 @@ const loadData = async () => {
       await pacientesStore.fetchPacienteById(route.params.id)
       const paciente = pacientesStore.currentPaciente
       if (paciente) {
-        Object.assign(form, paciente)
+        // Mapear correctamente el paciente a las refs
+        nombre.value = paciente.nombre || ''
+        clienteId.value = paciente.cliente?.id || paciente.clienteId || null
+        especie.value = paciente.especie || null
+
+        // Buscar la raza por nombre o ID
+        const razaNombre = paciente.raza?.nombre || paciente.raza || ''
+        const razaEncontrada = razas.value.find(r => r.nombre === razaNombre || r.id === paciente.raza?.id)
+        razaSeleccionada.value = razaEncontrada?.id || null
+
+        fechaNacimiento.value = paciente.fechaNacimiento || null
+        sexo.value = paciente.sexo || null
+        pesoKg.value = paciente.pesoKg || paciente.peso || null
+        color.value = paciente.color || ''
+        microchip.value = paciente.microchip || ''
+        observaciones.value = paciente.observaciones || ''
       }
     }
   } catch (error) {
@@ -214,10 +229,28 @@ const loadData = async () => {
 
 const savePaciente = async () => {
   try {
+    // Extraer el nombre de la raza seleccionada
+    const razaNombre = razaSeleccionada.value
+      ? razas.value.find(r => r.id === razaSeleccionada.value)?.nombre
+      : null
+
+    const formData = {
+      nombre: nombre.value,
+      clienteId: clienteId.value,
+      especie: especie.value,
+      raza: razaNombre,
+      fechaNacimiento: fechaNacimiento.value,
+      sexo: sexo.value,
+      pesoKg: pesoKg.value ? parseFloat(pesoKg.value) : null,
+      color: color.value || null,
+      microchip: microchip.value || null,
+      observaciones: observaciones.value || null,
+    }
+
     if (isEditing.value) {
-      await pacientesStore.updatePaciente(route.params.id, form)
+      await pacientesStore.updatePaciente(route.params.id, formData)
     } else {
-      await pacientesStore.createPaciente(form)
+      await pacientesStore.createPaciente(formData)
     }
     router.push('/pacientes')
   } catch (error) {

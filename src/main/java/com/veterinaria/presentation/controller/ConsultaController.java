@@ -87,6 +87,17 @@ public class ConsultaController {
     }
 
     /**
+     * Listar consultas por historial clínico
+     * GET /api/v1/consultas/historial/{historialId}
+     */
+    @GetMapping("/historial/{historialId}")
+    public ResponseEntity<List<ConsultaDTO>> listarPorHistorialClinico(@PathVariable Long historialId) {
+        log.debug("REST request to get Consultas by historial clinico: {}", historialId);
+        List<ConsultaDTO> consultas = consultaService.listarPorHistorialClinico(historialId);
+        return ResponseEntity.ok(consultas);
+    }
+
+    /**
      * Listar consultas por veterinario
      * GET /api/v1/consultas/veterinario/{veterinarioId}
      */
