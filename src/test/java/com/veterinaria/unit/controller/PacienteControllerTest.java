@@ -1,9 +1,9 @@
 package com.veterinaria.unit.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.veterinaria.application.dto.paciente.CreatePacienteRequest;
-import com.veterinaria.application.dto.paciente.PacienteDTO;
-import com.veterinaria.application.dto.paciente.UpdatePacienteRequest;
+import com.veterinaria.application.dto.patients.CreatePacienteRequest;
+import com.veterinaria.application.dto.patients.PacienteDTO;
+import com.veterinaria.application.dto.patients.UpdatePacienteRequest;
 import com.veterinaria.application.service.PacienteService;
 import com.veterinaria.domain.enums.EstadoPaciente;
 import com.veterinaria.domain.enums.Sexo;

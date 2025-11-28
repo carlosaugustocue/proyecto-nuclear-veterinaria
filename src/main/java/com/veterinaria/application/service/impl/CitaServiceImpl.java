@@ -1,6 +1,6 @@
 package com.veterinaria.application.service.impl;
 
-import com.veterinaria.application.dto.cita.*;
+import com.veterinaria.application.dto.appointments.*;
 import com.veterinaria.application.exception.BusinessRuleException;
 import com.veterinaria.application.exception.ResourceNotFoundException;
 import com.veterinaria.application.mapper.CitaMapper;
@@ -10,6 +10,7 @@ import com.veterinaria.application.repository.PacienteRepository;
 import com.veterinaria.application.repository.TipoServicioRepository;
 import com.veterinaria.application.repository.UsuarioRepository;
 import com.veterinaria.application.service.CitaService;
+import com.veterinaria.application.service.notification.EmailService;
 import com.veterinaria.application.service.validator.ValidadorDisponibilidad;
 import com.veterinaria.domain.entity.appointments.Cita;
 import com.veterinaria.domain.entity.appointments.TipoServicio;
@@ -43,6 +44,7 @@ public class CitaServiceImpl implements CitaService {
     private final TipoServicioRepository tipoServicioRepository;
     private final ValidadorDisponibilidad validadorDisponibilidad;
     private final CitaMapper citaMapper;
+    private final EmailService emailService;
 
     @Override
     @Transactional
@@ -110,6 +112,22 @@ public class CitaServiceImpl implements CitaService {
 
         // 7. Guardar en base de datos
         Cita guardada = citaRepository.save(cita);
+
+        // 8. Enviar notificación por email al cliente
+        try {
+            emailService.notificarCitaCreada(
+                    cliente.getEmail(),
+                    cliente.getNombreCompleto(),
+                    paciente.getNombre(),
+                    guardada.getFecha(),
+                    guardada.getHora(),
+                    tipoServicio.getNombre()
+            );
+            log.info("Email de confirmación enviado a: {}", cliente.getEmail());
+        } catch (Exception e) {
+            log.error("Error al enviar email de confirmación de cita: {}", e.getMessage());
+            // No interrumpir el flujo si falla el email
+        }
 
         log.info("Cita creada exitosamente con ID: {}", guardada.getId());
         return citaMapper.toDTO(guardada);
@@ -247,6 +265,20 @@ public class CitaServiceImpl implements CitaService {
         }
 
         Cita cancelada = citaRepository.save(cita);
+
+        // Enviar notificación por email al cliente
+        try {
+            emailService.notificarCitaCancelada(
+                    cita.getCliente().getEmail(),
+                    cita.getCliente().getNombreCompleto(),
+                    cita.getPaciente().getNombre(),
+                    cita.getFecha(),
+                    request.getMotivoCancelacion()
+            );
+            log.info("Email de cancelación enviado a: {}", cita.getCliente().getEmail());
+        } catch (Exception e) {
+            log.error("Error al enviar email de cancelación: {}", e.getMessage());
+        }
 
         log.info("Cita cancelada exitosamente ID: {}", id);
         return citaMapper.toDTO(cancelada);

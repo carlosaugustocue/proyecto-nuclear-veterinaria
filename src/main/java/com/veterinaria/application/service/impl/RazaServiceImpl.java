@@ -1,8 +1,8 @@
 package com.veterinaria.application.service.impl;
 
-import com.veterinaria.application.dto.raza.CreateRazaRequest;
-import com.veterinaria.application.dto.raza.RazaDTO;
-import com.veterinaria.application.dto.raza.UpdateRazaRequest;
+import com.veterinaria.application.dto.patients.CreateRazaRequest;
+import com.veterinaria.application.dto.patients.RazaDTO;
+import com.veterinaria.application.dto.patients.UpdateRazaRequest;
 import com.veterinaria.application.mapper.RazaMapper;
 import com.veterinaria.application.repository.RazaRepository;
 import com.veterinaria.application.service.RazaService;

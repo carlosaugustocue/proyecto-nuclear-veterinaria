@@ -1,9 +1,9 @@
 package com.veterinaria.application.service;
 
-import com.veterinaria.application.dto.paciente.CambiarEstadoPacienteRequest;
-import com.veterinaria.application.dto.paciente.CreatePacienteRequest;
-import com.veterinaria.application.dto.paciente.PacienteDTO;
-import com.veterinaria.application.dto.paciente.UpdatePacienteRequest;
+import com.veterinaria.application.dto.patients.CambiarEstadoPacienteRequest;
+import com.veterinaria.application.dto.patients.CreatePacienteRequest;
+import com.veterinaria.application.dto.patients.PacienteDTO;
+import com.veterinaria.application.dto.patients.UpdatePacienteRequest;
 import com.veterinaria.domain.enums.EstadoPaciente;
 import com.veterinaria.domain.enums.TipoEspecie;
 

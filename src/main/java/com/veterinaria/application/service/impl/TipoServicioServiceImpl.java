@@ -1,8 +1,8 @@
 package com.veterinaria.application.service.impl;
 
-import com.veterinaria.application.dto.tiposervicio.CreateTipoServicioRequest;
-import com.veterinaria.application.dto.tiposervicio.TipoServicioDTO;
-import com.veterinaria.application.dto.tiposervicio.UpdateTipoServicioRequest;
+import com.veterinaria.application.dto.appointments.CreateTipoServicioRequest;
+import com.veterinaria.application.dto.appointments.TipoServicioDTO;
+import com.veterinaria.application.dto.appointments.UpdateTipoServicioRequest;
 import com.veterinaria.application.exception.DuplicateResourceException;
 import com.veterinaria.application.exception.ResourceNotFoundException;
 import com.veterinaria.application.mapper.TipoServicioMapper;

@@ -9,6 +9,7 @@ import com.veterinaria.application.mapper.FacturaMapper;
 import com.veterinaria.application.mapper.PagoMapper;
 import com.veterinaria.application.repository.*;
 import com.veterinaria.application.service.FacturaService;
+import com.veterinaria.application.service.notification.EmailService;
 import com.veterinaria.domain.entity.appointments.Cita;
 import com.veterinaria.domain.entity.appointments.TipoServicio;
 import com.veterinaria.domain.entity.billing.*;
@@ -47,6 +48,7 @@ public class FacturaServiceImpl implements FacturaService {
     private final DetalleFacturaMapper detalleFacturaMapper;
     private final PagoMapper pagoMapper;
     private final DescuentoMapper descuentoMapper;
+    private final EmailService emailService;
 
     @Override
     @Transactional
@@ -94,8 +96,43 @@ public class FacturaServiceImpl implements FacturaService {
         // 6. Guardar
         Factura guardada = facturaRepository.save(factura);
 
+        // 7. Enviar notificación por email al cliente
+        try {
+            String detalles = generarResumenDetalles(guardada);
+            emailService.notificarFacturaGenerada(
+                    cliente.getEmail(),
+                    cliente.getNombreCompleto(),
+                    guardada.getNumeroFactura(),
+                    guardada.getTotal(),
+                    detalles
+            );
+            log.info("Email de factura enviado a: {}", cliente.getEmail());
+        } catch (Exception e) {
+            log.error("Error al enviar email de factura: {}", e.getMessage());
+            // No interrumpir el flujo si falla el email
+        }
+
         log.info("Factura creada exitosamente: {}", guardada.getNumeroFactura());
         return facturaMapper.toDTO(guardada);
+    }
+
+    /**
+     * Genera un resumen simple de los detalles de la factura
+     */
+    private String generarResumenDetalles(Factura factura) {
+        StringBuilder resumen = new StringBuilder();
+        List<DetalleFactura> detalles = detalleFacturaRepository.findByFacturaId(factura.getId());
+
+        for (DetalleFactura detalle : detalles) {
+            if (detalle.getIsActive()) {
+                resumen.append(String.format("%dx %s - S/ %.2f<br>",
+                        detalle.getCantidad(),
+                        detalle.getDescripcion(),
+                        detalle.getTotal()));
+            }
+        }
+
+        return resumen.toString();
     }
 
     @Override

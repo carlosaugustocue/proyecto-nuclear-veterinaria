@@ -1,6 +1,7 @@
 package com.veterinaria.application.mapper;
 
-import com.veterinaria.application.dto.cita.CitaDTO;
+import com.veterinaria.application.dto.appointments.CitaDTO;
+import com.veterinaria.application.dto.appointments.UpdateCitaRequest;
 import com.veterinaria.domain.entity.appointments.Cita;
 import org.mapstruct.*;
 
@@ -88,6 +89,6 @@ public interface CitaMapper {
     @Mapping(target = "updatedAt", ignore = true)
     @Mapping(target = "updatedBy", ignore = true)
     @Mapping(target = "isActive", ignore = true)
-    void updateEntityFromDTO(com.veterinaria.application.dto.cita.UpdateCitaRequest request,
+    void updateEntityFromDTO(UpdateCitaRequest request,
                              @MappingTarget Cita cita);
 }

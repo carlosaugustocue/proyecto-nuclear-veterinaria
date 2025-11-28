@@ -1,26 +1,26 @@
 package com.veterinaria.domain.enums;
 
-import lombok.Getter;
-
 /**
- * Tipos de notificación en el sistema.
- * Se utiliza con el patrón Factory Method y Observer para crear y enviar notificaciones.
+ * Tipos de notificaciones del sistema
  */
-@Getter
 public enum TipoNotificacion {
-    EMAIL("Email", "Notificación por correo electrónico", "email"),
-    SMS("SMS", "Notificación por mensaje de texto", "sms"),
-    WHATSAPP("WhatsApp", "Notificación por WhatsApp", "whatsapp"),
-    PUSH("Push", "Notificación push en la aplicación", "push"),
-    SISTEMA("Sistema", "Notificación interna del sistema", "sistema");
+    CITA_CREADA("Confirmación de Cita"),
+    CITA_RECORDATORIO("Recordatorio de Cita"),
+    CITA_CANCELADA("Cita Cancelada"),
+    FACTURA_GENERADA("Factura Generada"),
+    CONSULTA_FINALIZADA("Resumen de Consulta"),
+    VACUNA_PROXIMA("Recordatorio de Vacuna"),
+    SEGUIMIENTO_PENDIENTE("Recordatorio de Seguimiento"),
+    STOCK_BAJO("Alerta de Stock Bajo"),
+    PRODUCTO_VENCIDO("Alerta de Producto Vencido");
 
-    private final String displayName;
     private final String descripcion;
-    private final String canal;
 
-    TipoNotificacion(String displayName, String descripcion, String canal) {
-        this.displayName = displayName;
+    TipoNotificacion(String descripcion) {
         this.descripcion = descripcion;
-        this.canal = canal;
+    }
+
+    public String getDescripcion() {
+        return descripcion;
     }
 }

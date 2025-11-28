@@ -1,8 +1,8 @@
 package com.veterinaria.unit.service;
 
-import com.veterinaria.application.dto.paciente.CreatePacienteRequest;
-import com.veterinaria.application.dto.paciente.PacienteDTO;
-import com.veterinaria.application.dto.paciente.UpdatePacienteRequest;
+import com.veterinaria.application.dto.patients.CreatePacienteRequest;
+import com.veterinaria.application.dto.patients.PacienteDTO;
+import com.veterinaria.application.dto.patients.UpdatePacienteRequest;
 import com.veterinaria.application.mapper.PacienteMapper;
 import com.veterinaria.application.repository.ClienteRepository;
 import com.veterinaria.application.repository.PacienteRepository;

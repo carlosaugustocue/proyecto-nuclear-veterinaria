@@ -1,6 +1,6 @@
 package com.veterinaria.application.service;
 
-import com.veterinaria.application.dto.cita.*;
+import com.veterinaria.application.dto.appointments.*;
 
 import java.time.LocalDate;
 import java.util.List;

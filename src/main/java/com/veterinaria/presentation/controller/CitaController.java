@@ -1,6 +1,6 @@
 package com.veterinaria.presentation.controller;
 
-import com.veterinaria.application.dto.cita.*;
+import com.veterinaria.application.dto.appointments.*;
 import com.veterinaria.application.service.CitaService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;

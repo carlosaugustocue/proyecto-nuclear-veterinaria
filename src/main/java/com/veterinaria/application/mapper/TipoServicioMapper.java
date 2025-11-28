@@ -1,8 +1,8 @@
 package com.veterinaria.application.mapper;
 
-import com.veterinaria.application.dto.tiposervicio.CreateTipoServicioRequest;
-import com.veterinaria.application.dto.tiposervicio.TipoServicioDTO;
-import com.veterinaria.application.dto.tiposervicio.UpdateTipoServicioRequest;
+import com.veterinaria.application.dto.appointments.CreateTipoServicioRequest;
+import com.veterinaria.application.dto.appointments.TipoServicioDTO;
+import com.veterinaria.application.dto.appointments.UpdateTipoServicioRequest;
 import com.veterinaria.domain.entity.appointments.TipoServicio;
 import org.mapstruct.*;
 

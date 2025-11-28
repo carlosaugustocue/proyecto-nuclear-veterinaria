@@ -164,6 +164,20 @@ public class SecurityConfig {
 
                         // ==================== FIN MÓDULO FACTURACIÓN ====================
 
+                        // ==================== MÓDULO INVENTARIO (V1) ====================
+
+                        // Endpoints de Productos
+                        .requestMatchers(HttpMethod.POST, "/api/v1/productos").hasAuthority("PRODUCTOS_CREAR")
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/productos/**").hasAuthority("PRODUCTOS_EDITAR")
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/productos/**").hasAuthority("PRODUCTOS_ELIMINAR")
+                        .requestMatchers(HttpMethod.GET, "/api/v1/productos/**").hasAuthority("PRODUCTOS_VER")
+
+                        // Endpoints de Movimientos de Inventario
+                        .requestMatchers(HttpMethod.POST, "/api/v1/movimientos-inventario").hasAuthority("INVENTARIO_REGISTRAR_MOVIMIENTO")
+                        .requestMatchers(HttpMethod.GET, "/api/v1/movimientos-inventario/**").hasAuthority("INVENTARIO_VER_MOVIMIENTOS")
+
+                        // ==================== FIN MÓDULO INVENTARIO ====================
+
                         // Endpoints de inventario (legacy)
                         .requestMatchers(HttpMethod.POST, "/api/inventario").hasAuthority("INVENTARIO_INGRESAR")
                         .requestMatchers(HttpMethod.PUT, "/api/inventario/**").hasAuthority("INVENTARIO_ASIGNAR")

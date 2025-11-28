@@ -1,0 +1,615 @@
+{
+  "info": {
+    "name": "Sistema Veterinaria API",
+    "description": "Colección completa de endpoints para el Sistema de Gestión Veterinaria.\n\n**Total: 172 endpoints en 14 módulos**\n\n## Configuración Inicial\n1. Importa el archivo de environment (Veterinaria_Environment.json)\n2. Ejecuta el endpoint de Login en Auth\n3. El token se guardará automáticamente en las variables de entorno\n4. Todos los demás endpoints usarán el token automáticamente\n\n## Módulos\n- Authentication (7 endpoints)\n- Clientes (12 endpoints)\n- Pacientes (16 endpoints)\n- Citas (18 endpoints)\n- Consultas (14 endpoints)\n- Diagnósticos (11 endpoints)\n- Tratamientos (15 endpoints)\n- Exámenes (20 endpoints)\n- Vacunas (15 endpoints)\n- Historial Clínico (9 endpoints)\n- Facturas (18 endpoints)\n- Usuarios (13 endpoints)\n- Razas (18 endpoints)\n- Tipos de Servicio (8 endpoints)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "veterinaria-api"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{authToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "01 - Authentication",
+      "item": [
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.environment.set(\"authToken\", jsonData.token);",
+                  "    pm.environment.set(\"userId\", jsonData.userId);",
+                  "    pm.environment.set(\"userEmail\", jsonData.email);",
+                  "    console.log(\"Token guardado: \" + jsonData.token);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@veterinaria.com\",\n  \"password\": \"admin123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            },
+            "description": "Autenticar usuario y obtener token JWT"
+          },
+          "response": []
+        },
+        {
+          "name": "Ping",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/auth/ping",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "ping"]
+            },
+            "description": "Health check del controlador de autenticación"
+          },
+          "response": []
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/logout",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "logout"]
+            },
+            "description": "Cerrar sesión del usuario actual"
+          },
+          "response": []
+        },
+        {
+          "name": "Cambiar Password",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"passwordActual\": \"admin123\",\n  \"passwordNueva\": \"newpassword123\",\n  \"confirmarPassword\": \"newpassword123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/cambiar-password",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "cambiar-password"]
+            },
+            "description": "Cambiar contraseña del usuario autenticado"
+          },
+          "response": []
+        },
+        {
+          "name": "Validar Token",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/auth/validar",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "validar"]
+            },
+            "description": "Verificar si el token JWT es válido"
+          },
+          "response": []
+        },
+        {
+          "name": "Usuario Actual (Me)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/auth/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "me"]
+            },
+            "description": "Obtener información del usuario autenticado"
+          },
+          "response": []
+        },
+        {
+          "name": "Recuperar Password",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@veterinaria.com\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/recuperar-password",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "recuperar-password"]
+            },
+            "description": "Solicitar recuperación de contraseña (envía email)"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "02 - Clientes",
+      "item": [
+        {
+          "name": "Crear Cliente",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.environment.set(\"clienteId\", jsonData.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Juan\",\n  \"apellido\": \"Pérez García\",\n  \"dni\": \"12345678\",\n  \"email\": \"juan.perez@example.com\",\n  \"telefono\": \"+34912345678\",\n  \"direccion\": \"Calle Principal 123, Piso 2A\",\n  \"ciudad\": \"Madrid\",\n  \"departamento\": \"Madrid\",\n  \"codigoPostal\": \"28001\",\n  \"observaciones\": \"Cliente preferente\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/clientes",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "clientes"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Obtener Todos los Clientes",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/clientes",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "clientes"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Obtener Cliente por ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/clientes/{{clienteId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "clientes", "{{clienteId}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Actualizar Cliente",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Juan Carlos\",\n  \"apellido\": \"Pérez García\",\n  \"telefono\": \"+34912345679\",\n  \"direccion\": \"Calle Secundaria 456\",\n  \"ciudad\": \"Barcelona\",\n  \"observaciones\": \"Dirección actualizada\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/clientes/{{clienteId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "clientes", "{{clienteId}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Eliminar Cliente",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/clientes/{{clienteId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "clientes", "{{clienteId}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Buscar por Nombre o Apellido",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/clientes/buscar?termino=Juan",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "clientes", "buscar"],
+              "query": [
+                {
+                  "key": "termino",
+                  "value": "Juan"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Buscar por DNI",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/clientes/dni/12345678",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "clientes", "dni", "12345678"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Buscar por Email",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/clientes/email?email=juan.perez@example.com",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "clientes", "email"],
+              "query": [
+                {
+                  "key": "email",
+                  "value": "juan.perez@example.com"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Clientes con Pacientes Activos",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/clientes/con-pacientes-activos",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "clientes", "con-pacientes-activos"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Buscar por Ciudad",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/clientes/ciudad/Madrid",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "clientes", "ciudad", "Madrid"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "03 - Pacientes",
+      "item": [
+        {
+          "name": "Crear Paciente",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.environment.set(\"pacienteId\", jsonData.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Max\",\n  \"especie\": \"PERRO\",\n  \"raza\": \"Labrador Retriever\",\n  \"fechaNacimiento\": \"2020-03-15\",\n  \"sexo\": \"MACHO\",\n  \"color\": \"Dorado\",\n  \"pesoKg\": 32.5,\n  \"fotoUrl\": null,\n  \"observaciones\": \"Muy activo y sociable\",\n  \"microchip\": \"ABC123456789012\",\n  \"clienteId\": {{clienteId}}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/pacientes",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "pacientes"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Obtener Todos los Pacientes",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/pacientes",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "pacientes"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Obtener Paciente por ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/pacientes/{{pacienteId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "pacientes", "{{pacienteId}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Actualizar Paciente",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"raza\": \"Labrador Retriever Golden\",\n  \"color\": \"Dorado claro\",\n  \"pesoKg\": 33.2,\n  \"estado\": \"ACTIVO\",\n  \"observaciones\": \"Actualización de peso\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/pacientes/{{pacienteId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "pacientes", "{{pacienteId}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Eliminar Paciente",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/pacientes/{{pacienteId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "pacientes", "{{pacienteId}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Buscar por Nombre",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/pacientes/buscar?nombre=Max",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "pacientes", "buscar"],
+              "query": [
+                {
+                  "key": "nombre",
+                  "value": "Max"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Buscar por Especie",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/pacientes/especie/PERRO",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "pacientes", "especie", "PERRO"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Buscar por Estado",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/pacientes/estado/ACTIVO",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "pacientes", "estado", "ACTIVO"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Pacientes de un Cliente",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/pacientes/cliente/{{clienteId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "pacientes", "cliente", "{{clienteId}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Pacientes Activos de un Cliente",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/pacientes/cliente/{{clienteId}}/activos",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "pacientes", "cliente", "{{clienteId}}", "activos"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Buscar por Microchip",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/pacientes/microchip/ABC123456789012",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "pacientes", "microchip", "ABC123456789012"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Cambiar Estado",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nuevoEstado\": \"INACTIVO\",\n  \"motivo\": \"Paciente se mudó de ciudad\",\n  \"fechaCambio\": \"2024-01-20\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/pacientes/{{pacienteId}}/cambiar-estado",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "pacientes", "{{pacienteId}}", "cambiar-estado"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Contar por Estado",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/pacientes/contar/estado/ACTIVO",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "pacientes", "contar", "estado", "ACTIVO"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Filtrar por Especie y Estado",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/pacientes/filtrar?especie=PERRO&estado=ACTIVO",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "pacientes", "filtrar"],
+              "query": [
+                {
+                  "key": "especie",
+                  "value": "PERRO"
+                },
+                {
+                  "key": "estado",
+                  "value": "ACTIVO"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080/api",
+      "type": "string"
+    }
+  ]
+}

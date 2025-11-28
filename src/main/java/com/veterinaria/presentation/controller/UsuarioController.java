@@ -1,9 +1,9 @@
 package com.veterinaria.presentation.controller;
 
-import com.veterinaria.application.dto.usuario.ChangePasswordRequest;
-import com.veterinaria.application.dto.usuario.CreateUsuarioRequest;
-import com.veterinaria.application.dto.usuario.UpdateUsuarioRequest;
-import com.veterinaria.application.dto.usuario.UsuarioDTO;
+import com.veterinaria.application.dto.security.ChangePasswordRequest;
+import com.veterinaria.application.dto.security.CreateUsuarioRequest;
+import com.veterinaria.application.dto.security.UpdateUsuarioRequest;
+import com.veterinaria.application.dto.security.UsuarioDTO;
 import com.veterinaria.application.service.SesionService;
 import com.veterinaria.application.service.UsuarioService;
 import com.veterinaria.domain.entity.security.Sesion;
@@ -31,7 +31,7 @@ import java.util.List;
  * Endpoints para CRUD de usuarios, gestión de sesiones y administración de cuentas.
  */
 @RestController
-@RequestMapping("/usuarios")
+@RequestMapping("/api/usuarios")
 @RequiredArgsConstructor
 @Slf4j
 @Tag(name = "Usuarios", description = "Endpoints para gestión de usuarios")

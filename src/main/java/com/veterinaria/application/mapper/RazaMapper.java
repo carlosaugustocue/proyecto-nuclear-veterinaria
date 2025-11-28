@@ -1,6 +1,6 @@
 package com.veterinaria.application.mapper;
 
-import com.veterinaria.application.dto.raza.RazaDTO;
+import com.veterinaria.application.dto.patients.RazaDTO;
 import com.veterinaria.domain.entity.patients.Raza;
 import org.springframework.stereotype.Component;
 

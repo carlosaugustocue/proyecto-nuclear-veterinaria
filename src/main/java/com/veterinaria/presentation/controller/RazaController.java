@@ -1,8 +1,8 @@
 package com.veterinaria.presentation.controller;
 
-import com.veterinaria.application.dto.raza.CreateRazaRequest;
-import com.veterinaria.application.dto.raza.RazaDTO;
-import com.veterinaria.application.dto.raza.UpdateRazaRequest;
+import com.veterinaria.application.dto.patients.CreateRazaRequest;
+import com.veterinaria.application.dto.patients.RazaDTO;
+import com.veterinaria.application.dto.patients.UpdateRazaRequest;
 import com.veterinaria.application.service.RazaService;
 import com.veterinaria.domain.enums.TipoEspecie;
 import jakarta.validation.Valid;

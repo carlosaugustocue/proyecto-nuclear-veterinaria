@@ -100,15 +100,31 @@ public class DataLoader implements CommandLineRunner {
         permisosMap.put(PermisosDelSistema.HISTORIAL_EXPORTAR, 
                 crearPermiso(PermisosDelSistema.HISTORIAL_EXPORTAR, "Exportar historial clínico", "HISTORIAL"));
 
-        // Permisos de FACTURACIÓN
-        permisosMap.put(PermisosDelSistema.FACTURA_CREAR, 
-                crearPermiso(PermisosDelSistema.FACTURA_CREAR, "Crear facturas", "FACTURACION"));
-        permisosMap.put(PermisosDelSistema.FACTURA_VER, 
-                crearPermiso(PermisosDelSistema.FACTURA_VER, "Ver facturas", "FACTURACION"));
-        permisosMap.put(PermisosDelSistema.FACTURA_ANULAR, 
-                crearPermiso(PermisosDelSistema.FACTURA_ANULAR, "Anular facturas", "FACTURACION"));
-        permisosMap.put(PermisosDelSistema.FACTURA_DESCUENTO, 
-                crearPermiso(PermisosDelSistema.FACTURA_DESCUENTO, "Aplicar descuentos", "FACTURACION"));
+        // Permisos de FACTURACIÓN (v1 - actualizados)
+        permisosMap.put("FACTURAS_CREAR",
+                crearPermiso("FACTURAS_CREAR", "Crear facturas", "FACTURACION"));
+        permisosMap.put("FACTURAS_VER",
+                crearPermiso("FACTURAS_VER", "Ver facturas", "FACTURACION"));
+        permisosMap.put("FACTURAS_EDITAR",
+                crearPermiso("FACTURAS_EDITAR", "Editar facturas", "FACTURACION"));
+        permisosMap.put("FACTURAS_ELIMINAR",
+                crearPermiso("FACTURAS_ELIMINAR", "Eliminar facturas", "FACTURACION"));
+        permisosMap.put("FACTURAS_ANULAR",
+                crearPermiso("FACTURAS_ANULAR", "Anular facturas", "FACTURACION"));
+        permisosMap.put("FACTURAS_APLICAR_DESCUENTO",
+                crearPermiso("FACTURAS_APLICAR_DESCUENTO", "Aplicar descuentos", "FACTURACION"));
+        permisosMap.put("PAGOS_REGISTRAR",
+                crearPermiso("PAGOS_REGISTRAR", "Registrar pagos", "FACTURACION"));
+
+        // Permisos de FACTURACIÓN (legacy - mantener compatibilidad)
+        permisosMap.put(PermisosDelSistema.FACTURA_CREAR,
+                crearPermiso(PermisosDelSistema.FACTURA_CREAR, "Crear facturas (legacy)", "FACTURACION"));
+        permisosMap.put(PermisosDelSistema.FACTURA_VER,
+                crearPermiso(PermisosDelSistema.FACTURA_VER, "Ver facturas (legacy)", "FACTURACION"));
+        permisosMap.put(PermisosDelSistema.FACTURA_ANULAR,
+                crearPermiso(PermisosDelSistema.FACTURA_ANULAR, "Anular facturas (legacy)", "FACTURACION"));
+        permisosMap.put(PermisosDelSistema.FACTURA_DESCUENTO,
+                crearPermiso(PermisosDelSistema.FACTURA_DESCUENTO, "Aplicar descuentos (legacy)", "FACTURACION"));
 
         // Permisos de INVENTARIO
         permisosMap.put(PermisosDelSistema.INVENTARIO_VER, 
@@ -224,33 +240,50 @@ public class DataLoader implements CommandLineRunner {
                 permisos.get(PermisosDelSistema.CLIENTES_VER),
                 permisos.get(PermisosDelSistema.CLIENTES_CREAR),
                 permisos.get(PermisosDelSistema.CLIENTES_EDITAR),
+                // Facturas v1
+                permisos.get("FACTURAS_VER"),
+                permisos.get("FACTURAS_CREAR"),
+                // Facturas legacy (compatibilidad)
                 permisos.get(PermisosDelSistema.FACTURA_VER),
                 permisos.get(PermisosDelSistema.FACTURA_CREAR)
         );
-        rolesMap.put("ROLE_RECEPCIONISTA", crearRol("ROLE_RECEPCIONISTA", "Recepcionista", 
+        rolesMap.put("ROLE_RECEPCIONISTA", crearRol("ROLE_RECEPCIONISTA", "Recepcionista",
                 "Acceso a funciones de recepción", permisosRecepcionista));
 
         return rolesMap;
     }
 
     /**
-     * Crea un rol si no existe
+     * Crea un rol si no existe, o actualiza sus permisos si ya existe
      */
     private Rol crearRol(String nombre, String nombreDisplay, String descripcion, List<Permiso> permisos) {
-        return rolRepository.findByNombre(nombre)
-                .orElseGet(() -> {
-                    Rol rol = Rol.builder()
-                            .nombre(nombre)
-                            .descripcion(descripcion)
-                            .permisos(new ArrayList<>())
-                            .build();
-                    rol.setIsActive(true);
-                    
-                    // Agregar permisos
-                    permisos.forEach(rol::agregarPermiso);
-                    
-                    return rolRepository.save(rol);
-                });
+        Optional<Rol> rolExistente = rolRepository.findByNombre(nombre);
+
+        if (rolExistente.isPresent()) {
+            // Rol existe: actualizar permisos
+            Rol rol = rolExistente.get();
+            log.info("Actualizando permisos del rol: {}", nombre);
+
+            // Limpiar permisos actuales y agregar todos los nuevos
+            rol.getPermisos().clear();
+            permisos.forEach(rol::agregarPermiso);
+
+            return rolRepository.save(rol);
+        } else {
+            // Rol no existe: crear nuevo
+            log.info("Creando nuevo rol: {}", nombre);
+            Rol rol = Rol.builder()
+                    .nombre(nombre)
+                    .descripcion(descripcion)
+                    .permisos(new ArrayList<>())
+                    .build();
+            rol.setIsActive(true);
+
+            // Agregar permisos
+            permisos.forEach(rol::agregarPermiso);
+
+            return rolRepository.save(rol);
+        }
     }
 
     /**

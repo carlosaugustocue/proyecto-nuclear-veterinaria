@@ -1,8 +1,8 @@
 package com.veterinaria.presentation.controller;
 
-import com.veterinaria.application.dto.cliente.ClienteDTO;
-import com.veterinaria.application.dto.cliente.CreateClienteRequest;
-import com.veterinaria.application.dto.cliente.UpdateClienteRequest;
+import com.veterinaria.application.dto.patients.ClienteDTO;
+import com.veterinaria.application.dto.patients.CreateClienteRequest;
+import com.veterinaria.application.dto.patients.UpdateClienteRequest;
 import com.veterinaria.application.service.ClienteService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;

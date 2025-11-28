@@ -1,9 +1,9 @@
 package com.veterinaria.unit.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.veterinaria.application.dto.cliente.ClienteDTO;
-import com.veterinaria.application.dto.cliente.CreateClienteRequest;
-import com.veterinaria.application.dto.cliente.UpdateClienteRequest;
+import com.veterinaria.application.dto.patients.ClienteDTO;
+import com.veterinaria.application.dto.patients.CreateClienteRequest;
+import com.veterinaria.application.dto.patients.UpdateClienteRequest;
 import com.veterinaria.application.service.ClienteService;
 import com.veterinaria.infrastructure.exception.ResourceNotFoundException;
 import com.veterinaria.infrastructure.security.filter.JwtAuthenticationFilter;

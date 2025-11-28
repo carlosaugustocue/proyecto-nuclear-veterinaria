@@ -1,9 +1,9 @@
 package com.veterinaria.application.service;
 
-import com.veterinaria.application.dto.usuario.ChangePasswordRequest;
-import com.veterinaria.application.dto.usuario.CreateUsuarioRequest;
-import com.veterinaria.application.dto.usuario.UpdateUsuarioRequest;
-import com.veterinaria.application.dto.usuario.UsuarioDTO;
+import com.veterinaria.application.dto.security.ChangePasswordRequest;
+import com.veterinaria.application.dto.security.CreateUsuarioRequest;
+import com.veterinaria.application.dto.security.UpdateUsuarioRequest;
+import com.veterinaria.application.dto.security.UsuarioDTO;
 import com.veterinaria.application.repository.RolRepository;
 import com.veterinaria.application.repository.UsuarioRepository;
 import com.veterinaria.domain.entity.security.Rol;
