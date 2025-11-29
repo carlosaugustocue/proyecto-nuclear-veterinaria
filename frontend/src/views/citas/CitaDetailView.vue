@@ -72,6 +72,36 @@
               </v-col>
             </v-row>
 
+            <!-- Sección de Historial Clínico -->
+            <v-divider v-if="cita.estado === 'Completada' || cita.estado === 'En Progreso'" class="my-4"></v-divider>
+
+            <v-row v-if="cita.estado === 'Completada' || cita.estado === 'En Progreso'">
+              <v-col cols="12">
+                <v-alert type="info" variant="tonal" class="mb-4">
+                  <div class="d-flex justify-space-between align-center">
+                    <div>
+                      <v-icon class="mr-2">mdi-clipboard-text</v-icon>
+                      <strong>Historial Clínico</strong>
+                      <p class="mt-2 mb-0">
+                        {{ cita.estado === 'Completada' ?
+                          'Esta cita está completada. Puede registrar los hallazgos en el historial clínico del paciente.' :
+                          'La atención está en progreso. Complete la cita y registre los hallazgos en el historial clínico.'
+                        }}
+                      </p>
+                    </div>
+                    <v-btn
+                      color="primary"
+                      :to="`/pacientes/${cita.pacienteObj?.id || cita.pacienteId}/historial`"
+                      prepend-icon="mdi-file-document"
+                      v-if="cita.pacienteObj?.id || cita.pacienteId"
+                    >
+                      Ver Historial
+                    </v-btn>
+                  </div>
+                </v-alert>
+              </v-col>
+            </v-row>
+
             <v-row class="mt-6">
               <v-col cols="12" md="6">
                 <v-btn

@@ -6,6 +6,7 @@ import vuetify from './plugins/vuetify'
 
 // Importar estilos de Vuetify
 import 'vuetify/styles'
+import '@mdi/font/css/materialdesignicons.css'
 
 const app = createApp(App)
 

@@ -44,6 +44,12 @@ public interface FacturaService {
     FacturaDTO obtenerPorNumero(String numeroFactura);
 
     /**
+     * Lista todas las facturas activas
+     * @return lista de todas las facturas
+     */
+    List<FacturaDTO> listarTodas();
+
+    /**
      * Lista todas las facturas de un cliente
      * @param clienteId ID del cliente
      * @return lista de facturas

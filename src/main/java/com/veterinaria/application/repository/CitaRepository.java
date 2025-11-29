@@ -175,4 +175,12 @@ public interface CitaRepository extends JpaRepository<Cita, Long> {
     @Query("SELECT CASE WHEN COUNT(c) > 0 THEN true ELSE false END FROM Cita c " +
            "WHERE c.id = :id AND c.isActive = true")
     boolean existsByIdAndActive(@Param("id") Long id);
+
+    /**
+     * Busca una cita por token de confirmación
+     * @param token el token de confirmación
+     * @return Optional con la cita si existe
+     */
+    @Query("SELECT c FROM Cita c WHERE c.tokenConfirmacion = :token AND c.isActive = true")
+    Optional<Cita> findByTokenConfirmacion(@Param("token") String token);
 }

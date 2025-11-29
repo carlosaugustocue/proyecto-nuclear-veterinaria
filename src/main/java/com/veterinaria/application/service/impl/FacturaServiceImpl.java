@@ -186,6 +186,14 @@ public class FacturaServiceImpl implements FacturaService {
     }
 
     @Override
+    public List<FacturaDTO> listarTodas() {
+        log.debug("Listando todas las facturas activas");
+
+        List<Factura> facturas = facturaRepository.findAllActive();
+        return facturaMapper.toDTOList(facturas);
+    }
+
+    @Override
     public List<FacturaDTO> listarPorCliente(Long clienteId) {
         log.debug("Listando facturas del cliente ID: {}", clienteId);
 

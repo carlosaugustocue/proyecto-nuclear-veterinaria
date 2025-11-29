@@ -2,7 +2,7 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { useApi } from '@/composables/useApi'
 
-const { get, post, put, delete: deleteRequest } = useApi()
+const { get, post, put, patch, delete: deleteRequest } = useApi()
 
 export const useCitasStore = defineStore('citas', () => {
   const citas = ref([])
@@ -31,8 +31,8 @@ export const useCitasStore = defineStore('citas', () => {
 
   const citasCount = computed(() => citas.value.length)
   const citasProximas = computed(() => citas.value.filter(c => {
-    const estado = c.estadoNombre || c.estado
-    return estado === 'Confirmada' || estado === 'Programada'
+    const estado = (c.estadoNombre || c.estado || '').toLowerCase()
+    return estado === 'confirmada' || estado === 'programada' || estado.includes('atenci')
   }).length)
 
   const fetchCitas = async (filters = {}) => {
@@ -127,7 +127,7 @@ export const useCitasStore = defineStore('citas', () => {
     loading.value = true
     error.value = null
     try {
-      const response = await post(`/v1/citas/${id}/confirmar`)
+      const response = await patch(`/v1/citas/${id}/confirmar`)
       const mappedCita = mapCitaDTO(response.data)
       const index = citas.value.findIndex(c => c.id === id)
       if (index > -1) {
@@ -148,7 +148,7 @@ export const useCitasStore = defineStore('citas', () => {
     loading.value = true
     error.value = null
     try {
-      const response = await post(`/v1/citas/${id}/cancelar`, { motivoCancelacion })
+      const response = await patch(`/v1/citas/${id}/cancelar`, { motivoCancelacion })
       const mappedCita = mapCitaDTO(response.data)
       const index = citas.value.findIndex(c => c.id === id)
       if (index > -1) {
@@ -169,7 +169,7 @@ export const useCitasStore = defineStore('citas', () => {
     loading.value = true
     error.value = null
     try {
-      const response = await post(`/v1/citas/${id}/iniciar`)
+      const response = await patch(`/v1/citas/${id}/iniciar`)
       const mappedCita = mapCitaDTO(response.data)
       const index = citas.value.findIndex(c => c.id === id)
       if (index > -1) {
@@ -190,7 +190,7 @@ export const useCitasStore = defineStore('citas', () => {
     loading.value = true
     error.value = null
     try {
-      const response = await post(`/v1/citas/${id}/completar`)
+      const response = await patch(`/v1/citas/${id}/completar`)
       const mappedCita = mapCitaDTO(response.data)
       const index = citas.value.findIndex(c => c.id === id)
       if (index > -1) {
@@ -211,7 +211,7 @@ export const useCitasStore = defineStore('citas', () => {
     loading.value = true
     error.value = null
     try {
-      const response = await post(`/v1/citas/${id}/reagendar`, {
+      const response = await patch(`/v1/citas/${id}/reagendar`, {
         nuevaFecha,
         nuevaHora,
         motivoReagendamiento
@@ -232,12 +232,12 @@ export const useCitasStore = defineStore('citas', () => {
     }
   }
 
-  const obtenerHorariosDisponibles = async (veterinarioId, fecha, duracionMinutos) => {
+  const obtenerHorariosDisponibles = async (veterinarioId, fecha, duracionMinutos = 30) => {
     loading.value = true
     error.value = null
     try {
-      const response = await get('/v1/citas/horarios-disponibles', {
-        params: { veterinarioId, fecha, duracionMinutos }
+      const response = await get(`/v1/citas/disponibilidad/veterinario/${veterinarioId}`, {
+        params: { fecha, duracion: duracionMinutos }
       })
       return response.data || []
     } catch (err) {

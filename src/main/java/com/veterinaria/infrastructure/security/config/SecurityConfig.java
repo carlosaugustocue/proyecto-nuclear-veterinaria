@@ -67,6 +67,12 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/login", "/api/auth/recuperar-password").permitAll()
                         .requestMatchers("/api/public/**").permitAll()
 
+                        // Confirmación pública de citas por token
+                        .requestMatchers("/api/v1/citas/confirmar-por-token").permitAll()
+
+                        // TEST: Endpoint temporal para probar emails (ELIMINAR EN PRODUCCIÓN)
+                        .requestMatchers("/api/test/**").permitAll()
+
                         // Documentación API (Swagger/OpenAPI)
                         .requestMatchers("/swagger-ui/**", "/swagger-ui.html").permitAll()
                         .requestMatchers("/v3/api-docs/**", "/api-docs/**").permitAll()
@@ -116,7 +122,10 @@ public class SecurityConfig {
 
                         // ==================== MÓDULO CITAS ====================
 
-                        // Citas - ADMIN, VETERINARIO y RECEPCIONISTA
+                        // Citas V1 - ADMIN, VETERINARIO y RECEPCIONISTA
+                        .requestMatchers("/api/v1/citas/**").hasAnyRole("ADMIN", "VETERINARIO", "RECEPCIONISTA")
+
+                        // Citas legacy - ADMIN, VETERINARIO y RECEPCIONISTA
                         .requestMatchers("/api/citas/**").hasAnyRole("ADMIN", "VETERINARIO", "RECEPCIONISTA")
 
                         // ==================== MÓDULO FACTURACIÓN ====================

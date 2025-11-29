@@ -7,7 +7,7 @@
           <v-btn
             to="/clientes/nuevo"
             color="primary"
-            prepend-icon="plus"
+            prepend-icon="mdi-plus"
           >
             Nuevo Cliente
           </v-btn>
@@ -21,7 +21,7 @@
         <v-text-field
           v-model="filters.searchText"
           label="Buscar cliente"
-          prepend-icon="search"
+          prepend-icon="mdi-magnify"
           clearable
           @update:model-value="fetchClientes"
         ></v-text-field>
@@ -53,20 +53,21 @@
                 size="small"
                 color="primary"
                 variant="text"
-                icon="eyeDropper"
+                icon="mdi-eye"
                 :to="`/clientes/${item.id}`"
               ></v-btn>
               <v-btn
                 size="small"
                 color="info"
                 variant="text"
-                icon="edit"
+                icon="mdi-pencil"
+                :to="`/clientes/${item.id}/editar`"
               ></v-btn>
               <v-btn
                 size="small"
                 color="error"
                 variant="text"
-                icon="delete"
+                icon="mdi-delete"
                 @click="deleteCliente(item.id)"
               ></v-btn>
             </template>

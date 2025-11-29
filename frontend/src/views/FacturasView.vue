@@ -7,7 +7,7 @@
           <v-btn
             to="/facturas/nueva"
             color="primary"
-            prepend-icon="plus"
+            prepend-icon="mdi-plus"
           >
             Nueva Factura
           </v-btn>
@@ -21,7 +21,7 @@
         <v-text-field
           v-model="filters.searchText"
           label="Buscar por número o cliente"
-          prepend-icon="search"
+          prepend-icon="mdi-magnify"
           clearable
           @update:model-value="fetchFacturas"
         ></v-text-field>
@@ -82,20 +82,21 @@
                 size="small"
                 color="primary"
                 variant="text"
-                icon="eyeDropper"
+                icon="mdi-eye"
                 :to="`/facturas/${item.id}`"
               ></v-btn>
               <v-btn
                 size="small"
                 color="info"
                 variant="text"
-                icon="edit"
+                icon="mdi-pencil"
+                :to="`/facturas/${item.id}/editar`"
               ></v-btn>
               <v-btn
                 size="small"
                 color="error"
                 variant="text"
-                icon="delete"
+                icon="mdi-delete"
                 @click="deleteFactura(item.id)"
               ></v-btn>
             </template>
