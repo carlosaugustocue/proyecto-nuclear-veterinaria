@@ -143,6 +143,17 @@ public class CitaController {
     }
 
     /**
+     * Confirmar cita por token (acceso público - no requiere autenticación)
+     * POST /api/v1/citas/confirmar-por-token
+     */
+    @PostMapping("/confirmar-por-token")
+    public ResponseEntity<CitaDTO> confirmarPorToken(@RequestParam String token) {
+        log.info("REST request to confirm Cita by token");
+        CitaDTO confirmada = citaService.confirmarPorToken(token);
+        return ResponseEntity.ok(confirmada);
+    }
+
+    /**
      * Cancelar cita
      * PATCH /api/v1/citas/{id}/cancelar
      */

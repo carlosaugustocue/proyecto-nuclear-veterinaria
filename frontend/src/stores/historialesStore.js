@@ -69,11 +69,18 @@ export const useHistorialesStore = defineStore('historiales', () => {
         veterinarioId: veterinarioId,
         fechaConsulta: new Date().toISOString().split('T')[0], // Fecha actual en formato YYYY-MM-DD
         motivo: formData.motivo,
-        diagnostico: formData.diagnostico || null,
-        tratamiento: formData.tratamiento || null,
-        observaciones: formData.observaciones || null
+        anamnesis: formData.anamnesis || null,
+        examenFisico: formData.examenFisico || null,
+        planTratamiento: formData.planTratamiento || null,
+        pronostico: formData.pronostico || null,
+        observaciones: formData.observaciones || null,
+        requiereSeguimiento: formData.requiereSeguimiento || false,
+        fechaSeguimiento: formData.fechaSeguimiento || null
       })
-      consultas.value.unshift(response.data)
+
+      // Recargar todas las consultas para obtener datos completos con información del veterinario
+      await fetchConsultasByHistorial(historialId)
+
       return response.data
     } catch (err) {
       error.value = err.message || 'Error al crear consulta'

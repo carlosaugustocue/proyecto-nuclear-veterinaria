@@ -18,6 +18,12 @@ const routes = [
     meta: { requiresAuth: false },
   },
   {
+    path: '/confirmar-cita',
+    name: 'ConfirmarCita',
+    component: () => import('@/views/public/ConfirmarCitaView.vue'),
+    meta: { requiresAuth: false },
+  },
+  {
     path: '/',
     name: 'Dashboard',
     component: DashboardView,
@@ -63,6 +69,12 @@ const routes = [
     path: '/pacientes/:id/editar',
     name: 'EditarPaciente',
     component: () => import('@/views/pacientes/PacienteFormView.vue'),
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/pacientes/:id/historial',
+    name: 'HistorialPaciente',
+    component: () => import('@/views/pacientes/HistorialPacienteView.vue'),
     meta: { requiresAuth: true },
   },
   {

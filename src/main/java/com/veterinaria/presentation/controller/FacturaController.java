@@ -53,6 +53,17 @@ public class FacturaController {
     }
 
     /**
+     * Listar todas las facturas activas
+     * GET /api/v1/facturas
+     */
+    @GetMapping
+    public ResponseEntity<List<FacturaDTO>> listarTodas() {
+        log.debug("REST request to get all Facturas");
+        List<FacturaDTO> facturas = facturaService.listarTodas();
+        return ResponseEntity.ok(facturas);
+    }
+
+    /**
      * Obtener factura por ID
      * GET /api/v1/facturas/{id}
      */

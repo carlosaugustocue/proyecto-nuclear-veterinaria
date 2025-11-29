@@ -22,6 +22,13 @@ import java.util.Optional;
 public interface FacturaRepository extends JpaRepository<Factura, Long> {
 
     /**
+     * Lista todas las facturas activas
+     * @return lista de todas las facturas activas
+     */
+    @Query("SELECT f FROM Factura f WHERE f.isActive = true ORDER BY f.fechaEmision DESC")
+    List<Factura> findAllActive();
+
+    /**
      * Busca una factura por su número
      * @param numeroFactura número único de la factura
      * @return Optional con la factura si existe

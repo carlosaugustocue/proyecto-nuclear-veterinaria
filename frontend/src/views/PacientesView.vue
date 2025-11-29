@@ -7,7 +7,7 @@
           <v-btn
             to="/pacientes/nuevo"
             color="primary"
-            prepend-icon="plus"
+            prepend-icon="mdi-plus"
           >
             Nuevo Paciente
           </v-btn>
@@ -21,7 +21,7 @@
         <v-text-field
           v-model="filters.searchText"
           label="Buscar paciente"
-          prepend-icon="search"
+          prepend-icon="mdi-magnify"
           clearable
           @update:model-value="fetchPacientes"
         ></v-text-field>
@@ -76,21 +76,21 @@
                 size="small"
                 color="primary"
                 variant="text"
-                icon="eye"
+                icon="mdi-eye"
                 :to="`/pacientes/${item.id}`"
               ></v-btn>
               <v-btn
                 size="small"
                 color="info"
                 variant="text"
-                icon="edit"
+                icon="mdi-pencil"
                 :to="`/pacientes/${item.id}/editar`"
               ></v-btn>
               <v-btn
                 size="small"
                 color="error"
                 variant="text"
-                icon="delete"
+                icon="mdi-delete"
                 @click="deletePaciente(item.id)"
               ></v-btn>
             </template>

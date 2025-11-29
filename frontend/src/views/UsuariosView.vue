@@ -7,7 +7,7 @@
           <v-btn
             to="/usuarios/nuevo"
             color="primary"
-            prepend-icon="plus"
+            prepend-icon="mdi-plus"
           >
             Nuevo Usuario
           </v-btn>
@@ -21,7 +21,7 @@
         <v-text-field
           v-model="filters.searchText"
           label="Buscar usuario"
-          prepend-icon="search"
+          prepend-icon="mdi-magnify"
           clearable
           @update:model-value="fetchUsuarios"
         ></v-text-field>
@@ -76,21 +76,21 @@
                 size="small"
                 color="primary"
                 variant="text"
-                icon="eye"
+                icon="mdi-eye"
                 :to="`/usuarios/${item.id}`"
               ></v-btn>
               <v-btn
                 size="small"
                 color="info"
                 variant="text"
-                icon="edit"
+                icon="mdi-pencil"
                 :to="`/usuarios/${item.id}/editar`"
               ></v-btn>
               <v-btn
                 size="small"
                 color="error"
                 variant="text"
-                icon="delete"
+                icon="mdi-delete"
                 @click="deleteUsuario(item.id)"
               ></v-btn>
             </template>

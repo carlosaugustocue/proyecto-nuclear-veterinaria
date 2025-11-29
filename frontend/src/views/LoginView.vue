@@ -13,7 +13,7 @@
                 v-model="email"
                 label="Correo Electrónico"
                 type="email"
-                prepend-icon="account"
+                prepend-icon="mdi-account"
                 :rules="emailRules"
                 required
                 class="mb-4"
@@ -23,7 +23,7 @@
                 v-model="password"
                 label="Contraseña"
                 type="password"
-                prepend-icon="lock"
+                prepend-icon="mdi-lock"
                 :rules="passwordRules"
                 required
                 class="mb-2"

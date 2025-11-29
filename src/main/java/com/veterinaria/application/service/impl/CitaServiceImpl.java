@@ -97,7 +97,10 @@ public class CitaServiceImpl implements CitaService {
             );
         }
 
-        // 6. Crear la cita
+        // 6. Generar token único de confirmación
+        String tokenConfirmacion = generarTokenConfirmacion();
+
+        // 7. Crear la cita
         Cita cita = Cita.builder()
                 .fecha(request.getFecha())
                 .hora(request.getHora())
@@ -108,12 +111,13 @@ public class CitaServiceImpl implements CitaService {
                 .tipoServicio(tipoServicio)
                 .notas(request.getNotas())
                 .duracionEstimada(tipoServicio.getDuracionEstimada())
+                .tokenConfirmacion(tokenConfirmacion)
                 .build();
 
-        // 7. Guardar en base de datos
+        // 8. Guardar en base de datos
         Cita guardada = citaRepository.save(cita);
 
-        // 8. Enviar notificación por email al cliente
+        // 9. Enviar notificación por email al cliente con link de confirmación
         try {
             emailService.notificarCitaCreada(
                     cliente.getEmail(),
@@ -121,7 +125,8 @@ public class CitaServiceImpl implements CitaService {
                     paciente.getNombre(),
                     guardada.getFecha(),
                     guardada.getHora(),
-                    tipoServicio.getNombre()
+                    tipoServicio.getNombre(),
+                    tokenConfirmacion
             );
             log.info("Email de confirmación enviado a: {}", cliente.getEmail());
         } catch (Exception e) {
@@ -131,6 +136,14 @@ public class CitaServiceImpl implements CitaService {
 
         log.info("Cita creada exitosamente con ID: {}", guardada.getId());
         return citaMapper.toDTO(guardada);
+    }
+
+    /**
+     * Genera un token único para confirmación de cita
+     * @return token generado
+     */
+    private String generarTokenConfirmacion() {
+        return java.util.UUID.randomUUID().toString().replace("-", "");
     }
 
     @Override
@@ -243,7 +256,67 @@ public class CitaServiceImpl implements CitaService {
 
         Cita confirmada = citaRepository.save(cita);
 
+        // Notificar al veterinario que la cita fue confirmada
+        try {
+            emailService.notificarVeterinarioCitaConfirmada(
+                    cita.getVeterinario().getEmail(),
+                    cita.getVeterinario().getNombreCompleto(),
+                    cita.getCliente().getNombreCompleto(),
+                    cita.getPaciente().getNombre(),
+                    cita.getFecha(),
+                    cita.getHora()
+            );
+            log.info("Email de notificación enviado al veterinario: {}", cita.getVeterinario().getEmail());
+        } catch (Exception e) {
+            log.error("Error al enviar email de notificación al veterinario: {}", e.getMessage());
+        }
+
         log.info("Cita confirmada exitosamente ID: {}", id);
+        return citaMapper.toDTO(confirmada);
+    }
+
+    @Override
+    @Transactional
+    public CitaDTO confirmarPorToken(String token) {
+        log.info("Confirmando cita por token: {}", token);
+
+        Cita cita = citaRepository.findByTokenConfirmacion(token)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "No se encontró una cita con el token de confirmación proporcionado"
+                ));
+
+        // Validar que la cita no esté vencida (opcional: solo permitir confirmación hasta X horas antes)
+        if (cita.getFecha().isBefore(LocalDate.now())) {
+            throw new BusinessRuleException(
+                    "No se puede confirmar una cita que ya pasó"
+            );
+        }
+
+        // Usar método de la entidad (lógica de dominio)
+        try {
+            cita.confirmar();
+        } catch (IllegalStateException e) {
+            throw new BusinessRuleException(e.getMessage());
+        }
+
+        Cita confirmada = citaRepository.save(cita);
+
+        // Notificar al veterinario que la cita fue confirmada
+        try {
+            emailService.notificarVeterinarioCitaConfirmada(
+                    cita.getVeterinario().getEmail(),
+                    cita.getVeterinario().getNombreCompleto(),
+                    cita.getCliente().getNombreCompleto(),
+                    cita.getPaciente().getNombre(),
+                    cita.getFecha(),
+                    cita.getHora()
+            );
+            log.info("Email de notificación enviado al veterinario: {}", cita.getVeterinario().getEmail());
+        } catch (Exception e) {
+            log.error("Error al enviar email de notificación al veterinario: {}", e.getMessage());
+        }
+
+        log.info("Cita confirmada exitosamente por token");
         return citaMapper.toDTO(confirmada);
     }
 

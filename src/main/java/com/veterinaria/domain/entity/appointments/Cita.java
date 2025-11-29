@@ -123,6 +123,12 @@ public class Cita extends BaseAuditableEntity {
     private String motivoCancelacion;
 
     /**
+     * Token único para confirmación pública de la cita
+     */
+    @Column(name = "token_confirmacion", unique = true, length = 64)
+    private String tokenConfirmacion;
+
+    /**
      * Fecha y hora en que se confirmó la cita
      */
     @Column(name = "fecha_confirmacion")

@@ -84,6 +84,13 @@ public interface CitaService {
     CitaDTO confirmar(Long id);
 
     /**
+     * Confirma una cita usando el token de confirmación (acceso público)
+     * @param token el token de confirmación
+     * @return el DTO de la cita confirmada
+     */
+    CitaDTO confirmarPorToken(String token);
+
+    /**
      * Cancela una cita
      * @param id ID de la cita
      * @param request datos de cancelación (motivo)
