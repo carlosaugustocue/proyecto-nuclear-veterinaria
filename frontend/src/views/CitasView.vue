@@ -59,6 +59,16 @@
       </v-col>
 
       <v-col cols="12" sm="6" md="3">
+        <v-select
+          v-model="filters.facturacion"
+          label="Facturación"
+          :items="facturacionOptions"
+          clearable
+          @update:model-value="fetchCitas"
+        ></v-select>
+      </v-col>
+
+      <v-col cols="12" sm="6" md="3">
         <v-text-field
           v-model="filters.fecha"
           label="Fecha"
@@ -93,10 +103,35 @@
 
                 <!-- Estado -->
                 <template v-slot:item.estado="{ item }">
-                  <v-chip :color="getEstadoColor(item.estado)" text-color="white" size="small">
-                    <v-icon size="x-small" class="mr-1">{{ getEstadoIcon(item.estado) }}</v-icon>
-                    {{ item.estado }}
+                  <v-chip :color="getEstadoColor(obtenerEstado(item))" text-color="white" size="small">
+                    <v-icon size="x-small" class="mr-1">{{ getEstadoIcon(obtenerEstado(item)) }}</v-icon>
+                    {{ formatearEstado(obtenerEstado(item)) }}
                   </v-chip>
+                </template>
+
+                <!-- Facturación -->
+                <template v-slot:item.facturacion="{ item }">
+                  <div v-if="obtenerEstado(item).toLowerCase() === 'completada'">
+                    <v-chip
+                      v-if="item.tieneFactura"
+                      color="success"
+                      size="small"
+                      variant="outlined"
+                    >
+                      <v-icon size="x-small" class="mr-1">mdi-receipt</v-icon>
+                      Facturada
+                    </v-chip>
+                    <v-chip
+                      v-else
+                      color="warning"
+                      size="small"
+                      variant="outlined"
+                    >
+                      <v-icon size="x-small" class="mr-1">mdi-alert-circle</v-icon>
+                      Sin Factura
+                    </v-chip>
+                  </div>
+                  <span v-else class="text-grey text-caption">-</span>
                 </template>
 
                 <!-- Acciones con controles de estado -->
@@ -112,7 +147,7 @@
                     ></v-btn>
 
                     <!-- Botones de cambio de estado -->
-                    <v-menu v-if="item.estado?.toLowerCase() !== 'cancelada' && item.estado?.toLowerCase() !== 'completada'">
+                    <v-menu v-if="obtenerEstado(item).toLowerCase() !== 'cancelada' && obtenerEstado(item).toLowerCase() !== 'completada'">
                       <template v-slot:activator="{ props }">
                         <v-btn
                           size="small"
@@ -144,7 +179,7 @@
                         </v-list-item>
 
                         <v-list-item
-                          v-if="item.estado?.toLowerCase().includes('atenci')"
+                          v-if="estaEnProgreso(obtenerEstado(item))"
                           @click="continuarConsulta(item)"
                         >
                           <template v-slot:prepend>
@@ -154,7 +189,7 @@
                         </v-list-item>
 
                         <v-list-item
-                          v-if="item.estado?.toLowerCase().includes('atenci')"
+                          v-if="estaEnProgreso(obtenerEstado(item))"
                           @click="completarCita(item.id)"
                         >
                           <template v-slot:prepend>
@@ -236,7 +271,7 @@
                         v-for="cita in dia.citas.slice(0, 2)"
                         :key="cita.id"
                         size="x-small"
-                        :color="getEstadoColor(cita.estado)"
+                        :color="getEstadoColor(obtenerEstado(cita))"
                         class="mb-1 d-block text-truncate"
                         style="max-width: 100%;"
                       >
@@ -272,11 +307,11 @@
                 <template v-slot:opposite>
                   <div class="text-h6 font-weight-bold">{{ cita.hora }}</div>
                 </template>
-                <v-card :color="getEstadoColor(cita.estado)" variant="outlined">
+                <v-card :color="getEstadoColor(obtenerEstado(cita))" variant="outlined">
                   <v-card-title class="d-flex justify-space-between align-center">
                     <span>{{ cita.pacienteNombre }}</span>
-                    <v-chip :color="getEstadoColor(cita.estado)" size="small" text-color="white">
-                      {{ cita.estado }}
+                    <v-chip :color="getEstadoColor(obtenerEstado(cita))" size="small" text-color="white">
+                      {{ formatearEstado(obtenerEstado(cita)) }}
                     </v-chip>
                   </v-card-title>
                   <v-card-text>
@@ -295,7 +330,7 @@
                     </v-btn>
                     <v-spacer></v-spacer>
                     <v-btn
-                      v-if="cita.estado?.toLowerCase() === 'programada'"
+                      v-if="obtenerEstado(cita).toLowerCase() === 'programada'"
                       size="small"
                       color="success"
                       @click="confirmarCita(cita.id)"
@@ -304,7 +339,7 @@
                       Confirmar
                     </v-btn>
                     <v-btn
-                      v-if="cita.estado?.toLowerCase() === 'confirmada'"
+                      v-if="obtenerEstado(cita).toLowerCase() === 'confirmada'"
                       size="small"
                       color="warning"
                       @click="iniciarCita(cita.id)"
@@ -313,7 +348,7 @@
                       Iniciar
                     </v-btn>
                     <v-btn
-                      v-if="cita.estado?.toLowerCase().includes('atenci')"
+                      v-if="estaEnProgreso(obtenerEstado(cita))"
                       size="small"
                       color="primary"
                       @click="continuarConsulta(cita)"
@@ -322,7 +357,7 @@
                       Continuar Consulta
                     </v-btn>
                     <v-btn
-                      v-if="cita.estado?.toLowerCase().includes('atenci')"
+                      v-if="estaEnProgreso(obtenerEstado(cita))"
                       size="small"
                       color="success"
                       @click="completarCita(cita.id)"
@@ -373,10 +408,12 @@
 import { ref, reactive, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useCitasStore } from '@/stores/citasStore'
+import { useFacturasStore } from '@/stores/facturasStore'
 import { useNotification } from '@/composables/useNotification'
 
 const router = useRouter()
 const citasStore = useCitasStore()
+const facturasStore = useFacturasStore()
 const { showSuccess, showError } = useNotification()
 
 // Estado de la vista
@@ -389,6 +426,7 @@ const filters = reactive({
   searchText: '',
   estado: null,
   fecha: null,
+  facturacion: null,
 })
 
 // Estado del calendario
@@ -405,6 +443,12 @@ const estadoOptions = [
   'No Asistió',
 ]
 
+const facturacionOptions = [
+  { title: 'Con Factura', value: 'con_factura' },
+  { title: 'Sin Factura', value: 'sin_factura' },
+  { title: 'Completadas sin Factura', value: 'completadas_sin_factura' },
+]
+
 const headers = [
   { title: 'Paciente', value: 'pacienteNombre' },
   { title: 'Cliente', value: 'clienteNombre' },
@@ -412,23 +456,95 @@ const headers = [
   { title: 'Veterinario', value: 'veterinarioNombre' },
   { title: 'Motivo', value: 'motivo' },
   { title: 'Estado', value: 'estado', width: '140' },
+  { title: 'Facturación', value: 'facturacion', width: '140', sortable: false },
   { title: 'Acciones', value: 'actions', sortable: false, width: '150' },
 ]
 
 const loading = computed(() => citasStore.loading)
-const citas = computed(() => citasStore.citas)
+const citasRaw = computed(() => citasStore.citas)
+
+// Filtrar citas según el filtro de facturación
+const citas = computed(() => {
+  let filtered = citasRaw.value
+
+  // Aplicar filtro de facturación
+  if (filters.facturacion === 'con_factura') {
+    filtered = filtered.filter(c => c.tieneFactura === true)
+  } else if (filters.facturacion === 'sin_factura') {
+    filtered = filtered.filter(c => c.tieneFactura === false)
+  } else if (filters.facturacion === 'completadas_sin_factura') {
+    filtered = filtered.filter(c => {
+      const estado = obtenerEstado(c).toLowerCase()
+      return estado === 'completada' && c.tieneFactura === false
+    })
+  }
+
+  return filtered
+})
 
 const fetchCitas = async () => {
   try {
-    await citasStore.fetchCitas(filters)
+    // Preparar filtros para el backend (sin facturacion que es solo frontend)
+    const backendFilters = {
+      searchText: filters.searchText,
+      estado: filters.estado,
+      fecha: filters.fecha,
+    }
+    
+    await citasStore.fetchCitas(backendFilters)
+    
+    // Cargar facturas para verificar cuáles citas tienen factura
+    await cargarFacturasParaCitas()
   } catch (error) {
     console.error('Error al cargar citas:', error)
     showError(error.userMessage || 'Error al cargar las citas')
   }
 }
 
+// Función para cargar facturas y marcar citas que tienen factura
+const cargarFacturasParaCitas = async () => {
+  try {
+    // Cargar todas las facturas activas
+    await facturasStore.fetchFacturas()
+    
+    // Marcar citas completadas que tienen factura
+    citasStore.citas.forEach(cita => {
+      const estado = obtenerEstado(cita).toLowerCase()
+      if (estado === 'completada') {
+        // Buscar si existe una factura con este citaId
+        const factura = facturasStore.facturas.find(f => 
+          f.citaId && (f.citaId === cita.id || f.citaId.toString() === cita.id.toString())
+        )
+        cita.tieneFactura = !!factura
+        if (factura) {
+          cita.facturaId = factura.id
+          cita.facturaNumero = factura.numeroFactura
+        }
+      } else {
+        cita.tieneFactura = false
+      }
+    })
+  } catch (error) {
+    console.error('Error al cargar facturas para citas:', error)
+    // No mostrar error al usuario, solo loguear
+  }
+}
+
 const formatDate = (dateString) => {
   if (!dateString) return ''
+  // Si la fecha viene en formato ISO (YYYY-MM-DD), parsearla directamente sin conversión de zona horaria
+  if (typeof dateString === 'string' && /^\d{4}-\d{2}-\d{2}/.test(dateString)) {
+    // Extraer año, mes y día directamente del string
+    const [year, month, day] = dateString.split('T')[0].split('-')
+    // Crear fecha en zona horaria local para evitar problemas de conversión
+    const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day))
+    return date.toLocaleDateString('es-ES', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    })
+  }
+  // Fallback para otros formatos
   const date = new Date(dateString)
   return date.toLocaleDateString('es-ES', {
     year: 'numeric',
@@ -439,7 +555,7 @@ const formatDate = (dateString) => {
 
 const getEstadoColor = (estado) => {
   const estadoLower = estado?.toLowerCase() || ''
-  if (estadoLower.includes('atenci')) return 'warning'
+  if (estaEnProgreso(estado)) return 'warning'
   const colores = {
     'programada': 'info',
     'confirmada': 'success',
@@ -451,9 +567,39 @@ const getEstadoColor = (estado) => {
   return colores[estadoLower] || 'grey'
 }
 
+// Helper para verificar si una cita está en progreso o en atención
+const estaEnProgreso = (estado) => {
+  if (!estado) return false
+  const estadoLower = estado.toLowerCase()
+  return estadoLower.includes('atenci') || 
+         estadoLower.includes('progreso') || 
+         estadoLower === 'en_progreso'
+}
+
+// Helper para obtener el estado de una cita (considera estadoNombre si existe)
+const obtenerEstado = (item) => {
+  return item?.estadoNombre || item?.estado || ''
+}
+
+// Helper para formatear el estado para mostrar
+const formatearEstado = (estado) => {
+  if (!estado) return ''
+  const estadoLower = estado.toLowerCase()
+  // Si es EN_PROGRESO, mostrar como "En Progreso"
+  if (estadoLower === 'en_progreso' || estadoLower.includes('progreso')) {
+    return 'En Progreso'
+  }
+  // Si contiene "atenci", mostrar como "En Atención"
+  if (estadoLower.includes('atenci')) {
+    return 'En Atención'
+  }
+  // Capitalizar primera letra del resto de estados
+  return estado.charAt(0).toUpperCase() + estado.slice(1).toLowerCase()
+}
+
 const getEstadoIcon = (estado) => {
   const estadoLower = estado?.toLowerCase() || ''
-  if (estadoLower.includes('atenci')) return 'mdi-progress-clock'
+  if (estaEnProgreso(estado)) return 'mdi-progress-clock'
   const iconos = {
     'programada': 'mdi-calendar-clock',
     'confirmada': 'mdi-check-circle',
@@ -484,9 +630,11 @@ const calendarioDias = computed(() => {
   // Días del mes anterior
   for (let i = 0; i < primerDiaSemana; i++) {
     const fecha = new Date(currentYear.value, currentMonth.value, -(primerDiaSemana - i - 1))
+    // Crear fecha string sin conversión de zona horaria
+    const fechaStr = `${fecha.getFullYear()}-${String(fecha.getMonth() + 1).padStart(2, '0')}-${String(fecha.getDate()).padStart(2, '0')}`
     semanaActual.push({
       numero: fecha.getDate(),
-      fecha: fecha.toISOString().split('T')[0],
+      fecha: fechaStr,
       esDelMes: false,
       esHoy: false,
       citas: []
@@ -496,11 +644,17 @@ const calendarioDias = computed(() => {
   // Días del mes actual
   for (let dia = 1; dia <= diasDelMes; dia++) {
     const fecha = new Date(currentYear.value, currentMonth.value, dia)
-    const fechaStr = fecha.toISOString().split('T')[0]
+    // Crear fecha string en formato YYYY-MM-DD sin conversión de zona horaria
+    const fechaStr = `${fecha.getFullYear()}-${String(fecha.getMonth() + 1).padStart(2, '0')}-${String(fecha.getDate()).padStart(2, '0')}`
     const hoy = new Date()
     const esHoy = fecha.toDateString() === hoy.toDateString()
 
-    const citasDelDia = citas.value.filter(cita => cita.fecha === fechaStr)
+    // Comparar fechas sin considerar zona horaria
+    const citasDelDia = citas.value.filter(cita => {
+      // Normalizar ambas fechas a formato YYYY-MM-DD para comparación
+      const citaFecha = typeof cita.fecha === 'string' ? cita.fecha.split('T')[0] : cita.fecha
+      return citaFecha === fechaStr
+    })
 
     semanaActual.push({
       numero: dia,
@@ -521,9 +675,11 @@ const calendarioDias = computed(() => {
     let dia = 1
     while (semanaActual.length < 7) {
       const fecha = new Date(currentYear.value, currentMonth.value + 1, dia)
+      // Crear fecha string sin conversión de zona horaria
+      const fechaStr = `${fecha.getFullYear()}-${String(fecha.getMonth() + 1).padStart(2, '0')}-${String(fecha.getDate()).padStart(2, '0')}`
       semanaActual.push({
         numero: dia,
-        fecha: fecha.toISOString().split('T')[0],
+        fecha: fechaStr,
         esDelMes: false,
         esHoy: false,
         citas: []
@@ -537,9 +693,16 @@ const calendarioDias = computed(() => {
 })
 
 const citasDeHoy = computed(() => {
-  const hoy = new Date().toISOString().split('T')[0]
+  // Obtener fecha de hoy en formato YYYY-MM-DD sin conversión de zona horaria
+  const hoy = new Date()
+  const hoyStr = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}-${String(hoy.getDate()).padStart(2, '0')}`
+  
   return citas.value
-    .filter(cita => cita.fecha === hoy)
+    .filter(cita => {
+      // Normalizar fecha de la cita a formato YYYY-MM-DD
+      const citaFecha = typeof cita.fecha === 'string' ? cita.fecha.split('T')[0] : cita.fecha
+      return citaFecha === hoyStr
+    })
     .sort((a, b) => a.hora.localeCompare(b.hora))
 })
 

@@ -17,9 +17,10 @@
                     v-model="form.clienteId"
                     label="Cliente *"
                     :items="clientes"
-                    item-title="nombre"
+                    :item-title="(item) => item.nombreCompleto || item.nombre || `${item.nombre || ''} ${item.apellido || ''}`.trim() || 'Sin nombre'"
                     item-value="id"
                     :rules="[rules.required]"
+                    prepend-icon="mdi-account"
                   ></v-select>
                 </v-col>
 
@@ -28,8 +29,10 @@
                     v-model="form.citaId"
                     label="Cita Asociada"
                     :items="citas"
-                    item-title="paciente"
+                    :item-title="(item) => `${item.pacienteNombre || 'Sin paciente'} - ${formatDate(item.fecha)} ${formatTime(item.hora)}`"
                     item-value="id"
+                    prepend-icon="mdi-calendar-clock"
+                    clearable
                   ></v-select>
                 </v-col>
               </v-row>
@@ -139,32 +142,97 @@
     </v-row>
 
     <!-- Dialog para agregar items -->
-    <v-dialog v-model="dialogDetalle" width="500">
+    <v-dialog v-model="dialogDetalle" width="600" persistent>
       <v-card>
-        <v-card-title>Agregar Item</v-card-title>
-        <v-card-text>
+        <v-card-title class="bg-primary text-white">
+          Agregar Item / Servicio
+        </v-card-title>
+        <v-card-text class="pa-4">
+          <!-- Selección de Servicio -->
+          <v-select
+            v-model="nuevoDetalle.tipoServicioId"
+            label="Seleccionar Servicio"
+            :items="tiposServicio"
+            item-title="nombre"
+            item-value="id"
+            clearable
+            class="mb-4"
+            prepend-icon="mdi-medical-bag"
+            @update:model-value="onServicioSeleccionado"
+          >
+            <template v-slot:item="{ props, item }">
+              <v-list-item v-bind="props">
+                <template v-slot:prepend>
+                  <v-icon>mdi-medical-bag</v-icon>
+                </template>
+                <v-list-item-title>{{ item.raw.nombre }}</v-list-item-title>
+                <v-list-item-subtitle>
+                  ${{ formatCurrency(item.raw.precioBase || 0) }}
+                </v-list-item-subtitle>
+              </v-list-item>
+            </template>
+          </v-select>
+
+          <v-divider class="my-4"></v-divider>
+
+          <!-- Campos manuales -->
           <v-text-field
             v-model="nuevoDetalle.descripcion"
             label="Descripción *"
             class="mb-4"
+            :rules="[rules.required]"
+            prepend-icon="mdi-text"
           ></v-text-field>
-          <v-text-field
-            v-model.number="nuevoDetalle.cantidad"
-            label="Cantidad *"
-            type="number"
-            class="mb-4"
-          ></v-text-field>
-          <v-text-field
-            v-model.number="nuevoDetalle.precioUnitario"
-            label="Precio Unitario *"
-            type="number"
-            step="0.01"
-          ></v-text-field>
+
+          <v-row>
+            <v-col cols="6">
+              <v-text-field
+                v-model.number="nuevoDetalle.cantidad"
+                label="Cantidad *"
+                type="number"
+                min="1"
+                :rules="[rules.required, rules.positive]"
+                prepend-icon="mdi-numeric"
+              ></v-text-field>
+            </v-col>
+            <v-col cols="6">
+              <v-text-field
+                v-model.number="nuevoDetalle.precioUnitario"
+                label="Precio Unitario *"
+                type="number"
+                step="0.01"
+                min="0"
+                :rules="[rules.required, rules.positive]"
+                prepend-icon="mdi-currency-usd"
+              ></v-text-field>
+            </v-col>
+          </v-row>
+
+          <!-- Mostrar subtotal calculado -->
+          <v-alert
+            type="info"
+            variant="tonal"
+            class="mt-4"
+            v-if="nuevoDetalle.cantidad > 0 && nuevoDetalle.precioUnitario > 0"
+          >
+            <div class="d-flex justify-space-between align-center">
+              <span>Subtotal:</span>
+              <strong class="text-h6">
+                ${{ formatCurrency(nuevoDetalle.cantidad * nuevoDetalle.precioUnitario) }}
+              </strong>
+            </div>
+          </v-alert>
         </v-card-text>
         <v-card-actions>
           <v-spacer></v-spacer>
-          <v-btn color="secondary" @click="dialogDetalle = false">Cancelar</v-btn>
-          <v-btn color="primary" @click="confirmDetalle">Agregar</v-btn>
+          <v-btn color="secondary" @click="cancelarDetalle">Cancelar</v-btn>
+          <v-btn
+            color="primary"
+            @click="confirmDetalle"
+            :disabled="!nuevoDetalle.descripcion || !nuevoDetalle.cantidad || !nuevoDetalle.precioUnitario"
+          >
+            Agregar
+          </v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
@@ -180,7 +248,7 @@ import { useReferenceData } from '@/composables/useReferenceData'
 const router = useRouter()
 const route = useRoute()
 const facturasStore = useFacturasStore()
-const { fetchClientes, fetchCitas } = useReferenceData()
+const { fetchClientes, fetchCitas, fetchTiposServicio } = useReferenceData()
 
 const loading = computed(() => facturasStore.loading)
 const isEditing = computed(() => !!route.params.id)
@@ -196,6 +264,7 @@ const form = reactive({
 })
 
 const nuevoDetalle = reactive({
+  tipoServicioId: null,
   descripcion: '',
   cantidad: 1,
   precioUnitario: 0,
@@ -203,6 +272,7 @@ const nuevoDetalle = reactive({
 
 const clientes = ref([])
 const citas = ref([])
+const tiposServicio = ref([])
 
 const subtotal = computed(() => {
   return form.detalles.reduce((sum, item) => sum + item.cantidad * item.precioUnitario, 0)
@@ -214,6 +284,7 @@ const total = computed(() => {
 
 const rules = {
   required: (v) => !!v || 'Este campo es requerido',
+  positive: (v) => (v && v > 0) || 'El valor debe ser mayor a 0',
 }
 
 const formatCurrency = (value) => {
@@ -222,36 +293,86 @@ const formatCurrency = (value) => {
   }).format(value || 0)
 }
 
+const formatDate = (dateString) => {
+  if (!dateString) return ''
+  const date = new Date(dateString)
+  return date.toLocaleDateString('es-ES', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  })
+}
+
+const formatTime = (timeString) => {
+  if (!timeString) return ''
+  return timeString.substring(0, 5) // HH:MM
+}
+
 const addDetalle = () => {
+  // Resetear formulario
+  nuevoDetalle.tipoServicioId = null
+  nuevoDetalle.descripcion = ''
+  nuevoDetalle.cantidad = 1
+  nuevoDetalle.precioUnitario = 0
   dialogDetalle.value = true
+}
+
+const onServicioSeleccionado = (servicioId) => {
+  if (servicioId) {
+    const servicio = tiposServicio.value.find(s => s.id === servicioId)
+    if (servicio) {
+      nuevoDetalle.descripcion = servicio.nombre
+      nuevoDetalle.precioUnitario = servicio.precioBase || servicio.precio || 0
+      nuevoDetalle.tipoServicioId = servicio.id
+    }
+  }
+}
+
+const cancelarDetalle = () => {
+  nuevoDetalle.tipoServicioId = null
+  nuevoDetalle.descripcion = ''
+  nuevoDetalle.cantidad = 1
+  nuevoDetalle.precioUnitario = 0
+  dialogDetalle.value = false
 }
 
 const confirmDetalle = () => {
   if (nuevoDetalle.descripcion && nuevoDetalle.cantidad && nuevoDetalle.precioUnitario) {
-    form.detalles.push({ ...nuevoDetalle })
-    nuevoDetalle.descripcion = ''
-    nuevoDetalle.cantidad = 1
-    nuevoDetalle.precioUnitario = 0
-    dialogDetalle.value = false
+    const detalle = {
+      tipoServicioId: nuevoDetalle.tipoServicioId,
+      descripcion: nuevoDetalle.descripcion,
+      cantidad: nuevoDetalle.cantidad,
+      precioUnitario: nuevoDetalle.precioUnitario,
+      subtotal: nuevoDetalle.cantidad * nuevoDetalle.precioUnitario,
+    }
+    form.detalles.push(detalle)
+    cancelarDetalle()
   }
 }
 
 const loadData = async () => {
   try {
-    const [clientesData, citasData] = await Promise.all([
+    const [clientesData, citasData, tiposServicioData] = await Promise.all([
       fetchClientes(),
       fetchCitas(),
+      fetchTiposServicio(),
     ])
 
     clientes.value = clientesData
     citas.value = citasData
+    tiposServicio.value = tiposServicioData
 
     // Si estamos editando, cargar los datos de la factura
     if (isEditing.value) {
       await facturasStore.fetchFacturaById(route.params.id)
       const factura = facturasStore.currentFactura
       if (factura) {
-        Object.assign(form, factura)
+        form.clienteId = factura.clienteId
+        form.citaId = factura.citaId
+        form.fechaEmision = factura.fechaEmision
+        form.fechaVencimiento = factura.fechaVencimiento
+        form.detalles = factura.detalles || []
+        form.descuento = factura.totalDescuentos || 0
       }
     }
   } catch (error) {

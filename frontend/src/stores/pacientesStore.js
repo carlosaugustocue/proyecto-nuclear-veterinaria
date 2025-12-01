@@ -119,6 +119,40 @@ export const usePacientesStore = defineStore('pacientes', () => {
     }
   }
 
+  // Buscar pacientes por cliente
+  const fetchPacientesByCliente = async (clienteId) => {
+    loading.value = true
+    error.value = null
+    try {
+      const response = await get(`/v1/pacientes/cliente/${clienteId}`)
+      const rawData = response.data || []
+      return rawData.map(mapPacienteDTO)
+    } catch (err) {
+      error.value = err.message || 'Error al cargar pacientes del cliente'
+      console.error('Error fetching pacientes by cliente:', err)
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
+  // Buscar pacientes activos por cliente
+  const fetchPacientesActivosByCliente = async (clienteId) => {
+    loading.value = true
+    error.value = null
+    try {
+      const response = await get(`/v1/pacientes/cliente/${clienteId}/activos`)
+      const rawData = response.data || []
+      return rawData.map(mapPacienteDTO)
+    } catch (err) {
+      error.value = err.message || 'Error al cargar pacientes activos del cliente'
+      console.error('Error fetching pacientes activos by cliente:', err)
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
   return {
     pacientes,
     currentPaciente,
@@ -128,6 +162,8 @@ export const usePacientesStore = defineStore('pacientes', () => {
     pacientesActivos,
     fetchPacientes,
     fetchPacienteById,
+    fetchPacientesByCliente,
+    fetchPacientesActivosByCliente,
     createPaciente,
     updatePaciente,
     deletePaciente,

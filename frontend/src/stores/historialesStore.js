@@ -19,7 +19,19 @@ export const useHistorialesStore = defineStore('historiales', () => {
       currentHistorial.value = response.data
       return currentHistorial.value
     } catch (err) {
-      error.value = err.message || 'Error al cargar historial'
+      // Si es un 404, es esperado (el historial no existe aún)
+      // No establecer error para 404, solo lanzar para que el componente lo maneje
+      if (err.response?.status === 404) {
+        currentHistorial.value = null
+        error.value = null // No es un error, es un estado esperado
+        loading.value = false
+        throw err // Lanzar para que el componente pueda crear el historial
+      }
+      // Para otros errores, establecer el mensaje de error
+      error.value = err.response?.data?.userMessage || 
+                   err.response?.data?.message || 
+                   err.message || 
+                   'Error al cargar historial'
       console.error('Error fetching historial:', err)
       throw err
     } finally {

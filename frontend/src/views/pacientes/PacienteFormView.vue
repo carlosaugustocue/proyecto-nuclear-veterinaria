@@ -4,7 +4,7 @@
       <v-col cols="12" md="8" offset-md="2">
         <v-card>
           <v-card-title class="bg-primary text-white py-4">
-            {{ isEditing ? 'Editar Paciente' : 'Nuevo Paciente' }}
+            {{ isEditing ? 'Editar Mascota' : 'Nueva Mascota' }}
           </v-card-title>
 
           <v-card-text class="pa-6">
@@ -13,7 +13,7 @@
                 <v-col cols="12" md="6">
                   <v-text-field
                     v-model="nombre"
-                    label="Nombre del Paciente *"
+                    label="Nombre de la Mascota *"
                     :rules="[rules.required]"
                   ></v-text-field>
                 </v-col>
@@ -122,7 +122,7 @@
                     type="submit"
                     :loading="loading"
                   >
-                    {{ isEditing ? 'Actualizar' : 'Crear' }} Paciente
+                    {{ isEditing ? 'Actualizar' : 'Crear' }} Mascota
                   </v-btn>
                 </v-col>
 

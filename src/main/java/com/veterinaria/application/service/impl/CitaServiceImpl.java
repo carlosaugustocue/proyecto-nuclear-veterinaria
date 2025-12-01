@@ -49,6 +49,9 @@ public class CitaServiceImpl implements CitaService {
     @Override
     @Transactional
     public CitaDTO crear(CreateCitaRequest request) {
+        log.info("Creando nueva cita - Fecha recibida: {} (tipo: {}), Hora recibida: {} (tipo: {})",
+                request.getFecha(), request.getFecha() != null ? request.getFecha().getClass().getSimpleName() : "null",
+                request.getHora(), request.getHora() != null ? request.getHora().getClass().getSimpleName() : "null");
         log.info("Creando nueva cita para paciente ID: {} en fecha: {}",
                 request.getPacienteId(), request.getFecha());
 
@@ -83,6 +86,10 @@ public class CitaServiceImpl implements CitaService {
         }
 
         // 5. Validar disponibilidad del veterinario
+        log.info("Validando disponibilidad - Veterinario ID: {}, Fecha: {}, Hora: {}, Tipo Servicio: {} (duración: {} min)",
+                veterinario.getId(), request.getFecha(), request.getHora(), 
+                tipoServicio.getNombre(), tipoServicio.getDuracionEstimada());
+        
         boolean disponible = validadorDisponibilidad.verificarDisponibilidadVeterinario(
                 veterinario,
                 request.getFecha(),
@@ -92,8 +99,12 @@ public class CitaServiceImpl implements CitaService {
         );
 
         if (!disponible) {
+            log.error("Disponibilidad rechazada - Veterinario ID: {}, Fecha: {}, Hora: {}, Duración: {} min",
+                    veterinario.getId(), request.getFecha(), request.getHora(), tipoServicio.getDuracionEstimada());
             throw new BusinessRuleException(
-                    "El veterinario no está disponible en la fecha y hora solicitadas"
+                    "El veterinario no está disponible en la fecha y hora solicitadas. " +
+                    "Verifique que la fecha sea futura, el horario esté dentro del horario hábil " +
+                    "(08:00-18:00) y no haya conflictos con otras citas."
             );
         }
 
@@ -101,6 +112,7 @@ public class CitaServiceImpl implements CitaService {
         String tokenConfirmacion = generarTokenConfirmacion();
 
         // 7. Crear la cita
+        log.info("Construyendo entidad Cita - Fecha: {}, Hora: {}", request.getFecha(), request.getHora());
         Cita cita = Cita.builder()
                 .fecha(request.getFecha())
                 .hora(request.getHora())
@@ -114,8 +126,12 @@ public class CitaServiceImpl implements CitaService {
                 .tokenConfirmacion(tokenConfirmacion)
                 .build();
 
+        log.info("Entidad Cita creada - Fecha: {}, Hora: {}", cita.getFecha(), cita.getHora());
+
         // 8. Guardar en base de datos
         Cita guardada = citaRepository.save(cita);
+        log.info("Cita guardada en BD - ID: {}, Fecha guardada: {}, Hora guardada: {}", 
+                guardada.getId(), guardada.getFecha(), guardada.getHora());
 
         // 9. Enviar notificación por email al cliente con link de confirmación
         try {
@@ -128,10 +144,15 @@ public class CitaServiceImpl implements CitaService {
                     tipoServicio.getNombre(),
                     tokenConfirmacion
             );
-            log.info("Email de confirmación enviado a: {}", cliente.getEmail());
+            log.info("✓ Solicitud de envío de email de confirmación procesada para: {}", cliente.getEmail());
         } catch (Exception e) {
-            log.error("Error al enviar email de confirmación de cita: {}", e.getMessage());
-            // No interrumpir el flujo si falla el email
+            log.error("❌ Error al enviar email de confirmación de cita a {}: {}", cliente.getEmail(), e.getMessage());
+            log.error("   Tipo de error: {}", e.getClass().getSimpleName());
+            if (e.getCause() != null) {
+                log.error("   Causa: {}", e.getCause().getMessage());
+            }
+            // No interrumpir el flujo si falla el email, pero registrar el error completo
+            log.debug("Stack trace completo del error de email:", e);
         }
 
         log.info("Cita creada exitosamente con ID: {}", guardada.getId());

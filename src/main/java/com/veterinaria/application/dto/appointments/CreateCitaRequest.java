@@ -1,5 +1,6 @@
 package com.veterinaria.application.dto.appointments;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -23,9 +24,11 @@ public class CreateCitaRequest {
 
     @NotNull(message = "La fecha es obligatoria")
     @Future(message = "La fecha debe ser futura")
+    @JsonFormat(pattern = "yyyy-MM-dd", shape = JsonFormat.Shape.STRING)
     private LocalDate fecha;
 
     @NotNull(message = "La hora es obligatoria")
+    @JsonFormat(pattern = "HH:mm", shape = JsonFormat.Shape.STRING)
     private LocalTime hora;
 
     @NotBlank(message = "El motivo es obligatorio")

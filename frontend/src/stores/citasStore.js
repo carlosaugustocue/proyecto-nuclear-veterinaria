@@ -15,17 +15,21 @@ export const useCitasStore = defineStore('citas', () => {
     if (!dto) return null
     return {
       ...dto,
-      // Mantener objetos completos para edición
+      // Mantener objetos completos para edición (si existen)
       pacienteObj: dto.paciente,
       clienteObj: dto.cliente,
       veterinarioObj: dto.veterinario,
       tipoServicioObj: dto.tipoServicio,
-      // Agregar campos planos para mostrar en tablas
-      pacienteNombre: dto.paciente?.nombre || '',
-      clienteNombre: dto.cliente?.nombreCompleto || dto.cliente?.nombre || '',
-      veterinarioNombre: dto.veterinario?.nombreCompleto || dto.veterinario?.nombre || '',
-      tipoServicioNombre: dto.tipoServicio?.nombre || '',
-      estadoNombre: dto.estado?.nombre || dto.estado || '',
+      // Usar campos directos del DTO (el backend ya los mapea)
+      // Si no vienen, intentar extraer de objetos anidados como fallback
+      pacienteNombre: dto.pacienteNombre || dto.paciente?.nombre || '',
+      clienteNombre: dto.clienteNombre || dto.cliente?.nombreCompleto || dto.cliente?.nombre || '',
+      veterinarioNombre: dto.veterinarioNombre || dto.veterinario?.nombreCompleto || dto.veterinario?.nombre || '',
+      tipoServicioNombre: dto.tipoServicioNombre || dto.tipoServicio?.nombre || '',
+      // El backend retorna el estado como string en el campo 'estado'
+      estadoNombre: dto.estado || dto.estadoNombre || '',
+      // Mantener también el campo estado original para compatibilidad
+      estado: dto.estado || dto.estadoNombre || '',
     }
   }
 
@@ -72,6 +76,9 @@ export const useCitasStore = defineStore('citas', () => {
     loading.value = true
     error.value = null
     try {
+      // Log de datos que se envían para debugging
+      console.log('[CitasStore] Creando cita con datos:', JSON.stringify(formData, null, 2))
+      
       const response = await post('/v1/citas', formData)
       const mappedCita = mapCitaDTO(response.data)
       citas.value.push(mappedCita)
@@ -79,6 +86,7 @@ export const useCitasStore = defineStore('citas', () => {
     } catch (err) {
       error.value = err.message || 'Error al crear cita'
       console.error('Error creating cita:', err)
+      console.error('Error response data:', err.response?.data)
       throw err
     } finally {
       loading.value = false

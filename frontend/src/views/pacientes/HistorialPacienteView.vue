@@ -221,13 +221,13 @@
               <v-icon class="mr-2">mdi-history</v-icon>
               Historial de Consultas
             </v-card-title>
-            <v-card-text class="pa-4">
+            <v-card-text class="pa-4" style="max-height: 70vh; overflow-y: auto;">
               <v-alert v-if="consultas.length === 0" type="info" variant="tonal">
                 <v-icon class="mr-2">mdi-information</v-icon>
                 No hay consultas registradas para este paciente.
               </v-alert>
 
-              <v-timeline v-else side="end" align="start">
+              <v-timeline v-else side="end" align="start" density="compact">
                 <v-timeline-item
                   v-for="item in consultas"
                   :key="item.id"
@@ -235,33 +235,126 @@
                   size="small"
                 >
                   <template v-slot:opposite>
-                    <div class="text-h6">{{ formatDate(item.fecha) }}</div>
+                    <div class="text-subtitle-2 text-grey">{{ formatDate(item.fechaConsulta || item.fecha) }}</div>
                   </template>
-                  <v-card>
-                    <v-card-title class="bg-grey-lighten-4">
-                      {{ item.motivoConsulta }}
+                  <v-card class="mb-3" style="max-width: 100%;">
+                    <v-card-title class="bg-grey-lighten-4 d-flex justify-space-between align-center py-2">
+                      <span class="text-subtitle-2 text-truncate" style="max-width: 70%;">
+                        {{ truncateText(item.motivo || item.motivoConsulta, 60) }}
+                      </span>
+                      <v-btn
+                        v-if="!item.estaFinalizada"
+                        icon="mdi-pencil"
+                        size="x-small"
+                        variant="text"
+                        @click="editarConsulta(item)"
+                        color="primary"
+                      ></v-btn>
                     </v-card-title>
-                    <v-card-text class="pa-4">
-                      <div class="mb-2" v-if="item.peso">
-                        <strong>Peso:</strong> {{ item.peso }} kg
+                    <v-card-text class="pa-3" style="max-height: 400px; overflow-y: auto;">
+                      <v-row dense>
+                        <v-col cols="12" md="6" v-if="item.signosVitales?.pesoKg">
+                          <div class="text-caption">
+                            <v-icon size="x-small" class="mr-1">mdi-weight-kilogram</v-icon>
+                            <strong>Peso:</strong> {{ item.signosVitales.pesoKg }} kg
+                          </div>
+                        </v-col>
+                        <v-col cols="12" md="6" v-if="item.signosVitales?.temperatura">
+                          <div class="text-caption">
+                            <v-icon size="x-small" class="mr-1">mdi-thermometer</v-icon>
+                            <strong>Temperatura:</strong> {{ item.signosVitales.temperatura }} °C
+                          </div>
+                        </v-col>
+                        <v-col cols="12" md="6" v-if="item.signosVitales?.frecuenciaCardiaca">
+                          <div class="text-caption">
+                            <v-icon size="x-small" class="mr-1">mdi-heart-pulse</v-icon>
+                            <strong>Frecuencia Cardíaca:</strong> {{ item.signosVitales.frecuenciaCardiaca }} lpm
+                          </div>
+                        </v-col>
+                      </v-row>
+                      
+                      <v-expansion-panels variant="accordion" class="mt-2">
+                        <v-expansion-panel v-if="item.anamnesis || item.sintomas">
+                          <v-expansion-panel-title>
+                            <v-icon size="small" class="mr-2">mdi-clipboard-text</v-icon>
+                            <span class="text-caption">Anamnesis / Síntomas</span>
+                          </v-expansion-panel-title>
+                          <v-expansion-panel-text>
+                            <div class="text-body-2">{{ item.anamnesis || item.sintomas }}</div>
+                          </v-expansion-panel-text>
+                        </v-expansion-panel>
+                        
+                        <v-expansion-panel v-if="item.examenFisico || item.diagnostico">
+                          <v-expansion-panel-title>
+                            <v-icon size="small" class="mr-2">mdi-stethoscope</v-icon>
+                            <span class="text-caption">Diagnóstico</span>
+                          </v-expansion-panel-title>
+                          <v-expansion-panel-text>
+                            <div class="text-body-2">{{ item.examenFisico || item.diagnostico || 'No especificado' }}</div>
+                          </v-expansion-panel-text>
+                        </v-expansion-panel>
+                        
+                        <v-expansion-panel v-if="item.planTratamiento || item.tratamiento">
+                          <v-expansion-panel-title>
+                            <v-icon size="small" class="mr-2">mdi-pill</v-icon>
+                            <span class="text-caption">Tratamiento</span>
+                          </v-expansion-panel-title>
+                          <v-expansion-panel-text>
+                            <div class="text-body-2">{{ item.planTratamiento || item.tratamiento || 'No especificado' }}</div>
+                          </v-expansion-panel-text>
+                        </v-expansion-panel>
+                        
+                        <v-expansion-panel v-if="item.observaciones">
+                          <v-expansion-panel-title>
+                            <v-icon size="small" class="mr-2">mdi-note-text</v-icon>
+                            <span class="text-caption">Observaciones</span>
+                          </v-expansion-panel-title>
+                          <v-expansion-panel-text>
+                            <div class="text-body-2">{{ item.observaciones }}</div>
+                          </v-expansion-panel-text>
+                        </v-expansion-panel>
+                      </v-expansion-panels>
+                      
+                      <div v-if="item.diagnosticos && item.diagnosticos.length > 0" class="mt-2">
+                        <div class="text-caption mb-1">
+                          <v-icon size="x-small" class="mr-1">mdi-clipboard-list</v-icon>
+                          <strong>Diagnósticos adicionales:</strong>
+                        </div>
+                        <div class="d-flex flex-wrap gap-1">
+                          <v-chip
+                            v-for="diag in item.diagnosticos"
+                            :key="diag.id"
+                            size="x-small"
+                            color="info"
+                            variant="outlined"
+                          >
+                            {{ diag.descripcion }}
+                          </v-chip>
+                        </div>
                       </div>
-                      <div class="mb-2" v-if="item.temperatura">
-                        <strong>Temperatura:</strong> {{ item.temperatura }} °C
+                      
+                      <div v-if="item.tratamientos && item.tratamientos.length > 0" class="mt-2">
+                        <div class="text-caption mb-1">
+                          <v-icon size="x-small" class="mr-1">mdi-medical-bag</v-icon>
+                          <strong>Tratamientos prescritos:</strong>
+                        </div>
+                        <div class="d-flex flex-wrap gap-1">
+                          <v-chip
+                            v-for="trat in item.tratamientos"
+                            :key="trat.id"
+                            size="x-small"
+                            color="success"
+                            variant="outlined"
+                          >
+                            {{ trat.nombre }}
+                          </v-chip>
+                        </div>
                       </div>
-                      <div class="mb-2" v-if="item.sintomas">
-                        <strong>Síntomas:</strong> {{ item.sintomas }}
-                      </div>
-                      <div class="mb-2">
-                        <strong>Diagnóstico:</strong> {{ item.diagnostico }}
-                      </div>
-                      <div class="mb-2">
-                        <strong>Tratamiento:</strong> {{ item.tratamiento }}
-                      </div>
-                      <div class="mb-2" v-if="item.observaciones">
-                        <strong>Observaciones:</strong> {{ item.observaciones }}
-                      </div>
-                      <div class="text-caption text-grey mt-2">
-                        Atendido por: {{ item.veterinarioNombre || 'Dr. Desconocido' }}
+                      
+                      <v-divider class="my-2"></v-divider>
+                      <div class="text-caption text-grey d-flex align-center">
+                        <v-icon size="x-small" class="mr-1">mdi-account</v-icon>
+                        <span>Atendido por: {{ item.veterinarioNombre || 'Dr. Desconocido' }}</span>
                       </div>
                     </v-card-text>
                   </v-card>
@@ -271,6 +364,149 @@
           </v-card>
         </v-col>
       </v-row>
+
+      <!-- Diálogo para editar consulta -->
+      <v-dialog
+        v-model="dialogEditar"
+        max-width="900px"
+        scrollable
+        persistent
+      >
+        <v-card>
+          <v-card-title class="bg-primary text-white d-flex align-center">
+            <v-icon class="mr-2">mdi-file-document-edit</v-icon>
+            <span>Editar Consulta Médica</span>
+            <v-spacer></v-spacer>
+            <v-btn
+              icon="mdi-close"
+              variant="text"
+              @click="cancelarEdicion"
+              color="white"
+            ></v-btn>
+          </v-card-title>
+          <v-card-text class="pa-6">
+            <v-form ref="formEditarRef" @submit.prevent="guardarConsultaEditar">
+              <v-row>
+                <v-col cols="12" md="6">
+                  <v-text-field
+                    v-model="consultaEditar.fecha"
+                    label="Fecha de Consulta *"
+                    type="date"
+                    :rules="[rules.required]"
+                    variant="outlined"
+                  ></v-text-field>
+                </v-col>
+
+                <v-col cols="12" md="6">
+                  <v-text-field
+                    v-model="consultaEditar.peso"
+                    label="Peso (kg)"
+                    type="number"
+                    step="0.1"
+                    variant="outlined"
+                  ></v-text-field>
+                </v-col>
+              </v-row>
+
+              <v-row>
+                <v-col cols="12">
+                  <v-textarea
+                    v-model="consultaEditar.motivoConsulta"
+                    label="Motivo de Consulta *"
+                    :rules="[rules.required]"
+                    rows="3"
+                    variant="outlined"
+                  ></v-textarea>
+                </v-col>
+              </v-row>
+
+              <v-row>
+                <v-col cols="12">
+                  <v-textarea
+                    v-model="consultaEditar.sintomas"
+                    label="Síntomas Observados"
+                    rows="3"
+                    variant="outlined"
+                  ></v-textarea>
+                </v-col>
+              </v-row>
+
+              <v-row>
+                <v-col cols="12" md="6">
+                  <v-text-field
+                    v-model="consultaEditar.temperatura"
+                    label="Temperatura (°C)"
+                    type="number"
+                    step="0.1"
+                    variant="outlined"
+                  ></v-text-field>
+                </v-col>
+
+                <v-col cols="12" md="6">
+                  <v-text-field
+                    v-model="consultaEditar.frecuenciaCardiaca"
+                    label="Frecuencia Cardíaca (lpm)"
+                    type="number"
+                    variant="outlined"
+                  ></v-text-field>
+                </v-col>
+              </v-row>
+
+              <v-row>
+                <v-col cols="12">
+                  <v-textarea
+                    v-model="consultaEditar.diagnostico"
+                    label="Diagnóstico *"
+                    :rules="[rules.required]"
+                    rows="4"
+                    variant="outlined"
+                  ></v-textarea>
+                </v-col>
+              </v-row>
+
+              <v-row>
+                <v-col cols="12">
+                  <v-textarea
+                    v-model="consultaEditar.tratamiento"
+                    label="Tratamiento Prescrito *"
+                    :rules="[rules.required]"
+                    rows="4"
+                    variant="outlined"
+                  ></v-textarea>
+                </v-col>
+              </v-row>
+
+              <v-row>
+                <v-col cols="12">
+                  <v-textarea
+                    v-model="consultaEditar.observaciones"
+                    label="Observaciones Adicionales"
+                    rows="3"
+                    variant="outlined"
+                  ></v-textarea>
+                </v-col>
+              </v-row>
+            </v-form>
+          </v-card-text>
+          <v-card-actions class="pa-4">
+            <v-spacer></v-spacer>
+            <v-btn
+              color="secondary"
+              @click="cancelarEdicion"
+              variant="outlined"
+            >
+              Cancelar
+            </v-btn>
+            <v-btn
+              color="primary"
+              @click="guardarConsultaEditar"
+              :loading="guardando"
+            >
+              Actualizar Consulta
+            </v-btn>
+          </v-card-actions>
+        </v-card>
+      </v-dialog>
     </template>
   </v-container>
 </template>
@@ -279,11 +515,19 @@
 import { ref, reactive, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useNotification } from '@/composables/useNotification'
-import axios from 'axios'
+import { useAuthStore } from '@/stores/authStore'
+import { useCitasStore } from '@/stores/citasStore'
+import { useApi } from '@/composables/useApi'
+import { useHistorialesStore } from '@/stores/historialesStore'
+import { usePacientesStore } from '@/stores/pacientesStore'
 
 const route = useRoute()
 const router = useRouter()
 const { showSuccess, showError } = useNotification()
+const authStore = useAuthStore()
+const citasStore = useCitasStore()
+const historialesStore = useHistorialesStore()
+const pacientesStore = usePacientesStore()
 
 const loading = ref(true)
 const guardando = ref(false)
@@ -325,24 +569,82 @@ if (fromCita.value && citaData.motivo) {
 
 const formatDate = (dateStr) => {
   if (!dateStr) return ''
-  const date = new Date(dateStr + 'T00:00:00')
-  return date.toLocaleDateString('es-ES', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
-  })
+  try {
+    // Si ya es una fecha ISO completa, usarla directamente
+    const date = dateStr.includes('T') ? new Date(dateStr) : new Date(dateStr + 'T00:00:00')
+    return date.toLocaleDateString('es-ES', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    })
+  } catch (error) {
+    console.error('Error al formatear fecha:', dateStr, error)
+    return dateStr
+  }
+}
+
+const truncateText = (text, maxLength) => {
+  if (!text) return ''
+  if (text.length <= maxLength) return text
+  return text.substring(0, maxLength) + '...'
+}
+
+// Función para editar una consulta existente
+const consultaEditando = ref(null)
+
+const editarConsulta = (consultaItem) => {
+  consultaEditando.value = consultaItem
+  dialogEditar.value = true
+  
+  // Pre-llenar el formulario con los datos de la consulta
+  consultaEditar.fecha = consultaItem.fechaConsulta || consultaItem.fecha || new Date().toISOString().split('T')[0]
+  consultaEditar.peso = consultaItem.signosVitales?.pesoKg || null
+  consultaEditar.motivoConsulta = consultaItem.motivo || consultaItem.motivoConsulta || ''
+  consultaEditar.sintomas = consultaItem.anamnesis || consultaItem.sintomas || ''
+  consultaEditar.temperatura = consultaItem.signosVitales?.temperatura || null
+  consultaEditar.frecuenciaCardiaca = consultaItem.signosVitales?.frecuenciaCardiaca || null
+  consultaEditar.diagnostico = consultaItem.examenFisico || consultaItem.diagnostico || ''
+  consultaEditar.tratamiento = consultaItem.planTratamiento || consultaItem.tratamiento || ''
+  consultaEditar.observaciones = consultaItem.observaciones || ''
+}
+
+const cancelarEdicion = () => {
+  consultaEditando.value = null
+  dialogEditar.value = false
+  limpiarFormularioEditar()
+}
+
+// Formulario separado para edición en el diálogo
+const dialogEditar = ref(false)
+const formEditarRef = ref(null)
+const consultaEditar = reactive({
+  fecha: new Date().toISOString().split('T')[0],
+  peso: null,
+  motivoConsulta: '',
+  sintomas: '',
+  temperatura: null,
+  frecuenciaCardiaca: null,
+  diagnostico: '',
+  tratamiento: '',
+  observaciones: ''
+})
+
+const limpiarFormularioEditar = () => {
+  consultaEditar.fecha = new Date().toISOString().split('T')[0]
+  consultaEditar.peso = null
+  consultaEditar.motivoConsulta = ''
+  consultaEditar.sintomas = ''
+  consultaEditar.temperatura = null
+  consultaEditar.frecuenciaCardiaca = null
+  consultaEditar.diagnostico = ''
+  consultaEditar.tratamiento = ''
+  consultaEditar.observaciones = ''
+  formEditarRef.value?.resetValidation()
 }
 
 const cargarPaciente = async () => {
   try {
-    const token = localStorage.getItem('token')
-    const response = await axios.get(
-      `http://localhost:8080/api/v1/pacientes/${route.params.id}`,
-      {
-        headers: { Authorization: `Bearer ${token}` }
-      }
-    )
-    paciente.value = response.data
+    paciente.value = await pacientesStore.fetchPacienteById(route.params.id)
   } catch (error) {
     console.error('Error al cargar paciente:', error)
     showError('Error al cargar la información del paciente')
@@ -351,23 +653,47 @@ const cargarPaciente = async () => {
 
 const cargarConsultas = async () => {
   try {
-    const token = localStorage.getItem('token')
-    // Intentar cargar consultas del historial
-    const response = await axios.get(
-      `http://localhost:8080/api/v1/historiales-clinicos/paciente/${route.params.id}`,
-      {
-        headers: { Authorization: `Bearer ${token}` }
+    // Intentar cargar el historial del paciente
+    try {
+      await historialesStore.fetchHistorialByPaciente(route.params.id)
+      
+      // Si existe historial, cargar las consultas
+      if (historialesStore.currentHistorial?.id) {
+        await historialesStore.fetchConsultasByHistorial(historialesStore.currentHistorial.id)
+        consultas.value = historialesStore.consultas.sort((a, b) => {
+          const fechaA = a.fechaConsulta || a.fecha || ''
+          const fechaB = b.fechaConsulta || b.fecha || ''
+          return new Date(fechaB) - new Date(fechaA)
+        })
+      } else {
+        consultas.value = []
       }
-    )
-
-    if (response.data && response.data.consultas) {
-      consultas.value = response.data.consultas.sort((a, b) =>
-        new Date(b.fecha) - new Date(a.fecha)
-      )
+    } catch (error) {
+      // Si no existe historial (404), crearlo automáticamente
+      if (error.response?.status === 404) {
+        try {
+          const nuevoHistorial = await historialesStore.createHistorial(route.params.id)
+          if (nuevoHistorial?.id) {
+            // Inicializar consultas vacías para el nuevo historial
+            consultas.value = []
+            // No mostrar mensaje de éxito para no interrumpir el flujo
+          }
+        } catch (createError) {
+          console.error('Error creating historial:', createError)
+          const mensaje = createError.response?.data?.userMessage || 
+                         createError.response?.data?.message || 
+                         'Error al crear el historial clínico'
+          showError(mensaje)
+          consultas.value = []
+        }
+      } else {
+        // Otro tipo de error
+        console.error('Error loading historial:', error)
+        consultas.value = []
+      }
     }
   } catch (error) {
     console.error('Error al cargar consultas:', error)
-    // No mostrar error si simplemente no existen consultas
     consultas.value = []
   }
 }
@@ -384,25 +710,75 @@ const guardarConsulta = async () => {
 
   try {
     const token = localStorage.getItem('token')
-    const userStr = localStorage.getItem('user')
-    const user = userStr ? JSON.parse(userStr) : null
-
-    if (!user) {
-      showError('No se pudo obtener la información del veterinario')
+    
+    if (!token) {
+      showError('No hay sesión activa. Por favor, inicie sesión nuevamente.')
+      guardando.value = false
       return
     }
+    
+    // Obtener el usuario del store o del endpoint
+    let user = authStore.user
+    
+    // Si no hay usuario en el store, intentar obtenerlo del endpoint
+    if (!user || !user.id) {
+      console.log('Usuario no encontrado en store, obteniendo del endpoint...')
+      user = await authStore.getCurrentUser()
+      
+      // Si el usuario no tiene ID, buscarlo por username para obtener el ID completo
+      if (user && !user.id && user.username) {
+        console.log('Buscando usuario completo por username:', user.username)
+        try {
+          const { get } = useApi()
+          // Buscar en la lista de usuarios
+          const usuariosResponse = await get('/usuarios', {
+            params: { page: 0, size: 100 }
+          })
+          const usuarios = usuariosResponse.data?.content || usuariosResponse.data || []
+          const usuarioCompleto = usuarios.find(u => u.username === user.username || u.email === user.email)
+          if (usuarioCompleto) {
+            user = { ...user, id: usuarioCompleto.id }
+            console.log('Usuario completo encontrado:', user)
+          }
+        } catch (error) {
+          console.error('Error al buscar usuario completo:', error)
+        }
+      }
+    }
+    
+    // Si aún no hay usuario o no tiene ID, mostrar error
+    if (!user || !user.id) {
+      console.error('No se pudo obtener el usuario o su ID:', user)
+      showError('No se pudo obtener la información del veterinario. Por favor, inicie sesión nuevamente.')
+      guardando.value = false
+      return
+    }
+    
+    console.log('Usuario obtenido con ID:', user)
 
     // Obtener o crear historial clínico
     let historialId = null
     try {
-      const historialResponse = await axios.get(
-        `http://localhost:8080/api/v1/historiales-clinicos/paciente/${route.params.id}`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      )
-      historialId = historialResponse.data?.id
+      await historialesStore.fetchHistorialByPaciente(route.params.id)
+      historialId = historialesStore.currentHistorial?.id
     } catch (error) {
-      // Si no existe, el backend lo creará automáticamente
-      console.log('No existe historial clínico, se creará automáticamente')
+      // Si no existe (404), crearlo automáticamente
+      if (error.response?.status === 404) {
+        try {
+          const nuevoHistorial = await historialesStore.createHistorial(route.params.id)
+          historialId = nuevoHistorial?.id
+        } catch (createError) {
+          console.error('Error al crear historial:', createError)
+          showError('Error al crear el historial clínico')
+          guardando.value = false
+          return
+        }
+      } else {
+        console.error('Error al obtener historial:', error)
+        showError('Error al obtener el historial clínico')
+        guardando.value = false
+        return
+      }
     }
 
     // Preparar signos vitales
@@ -411,7 +787,10 @@ const guardarConsulta = async () => {
     if (consulta.temperatura) signosVitales.temperatura = parseFloat(consulta.temperatura)
     if (consulta.frecuenciaCardiaca) signosVitales.frecuenciaCardiaca = parseInt(consulta.frecuenciaCardiaca)
 
-    // Preparar datos de la consulta según el modelo del backend
+    // Obtener post de useApi
+    const { post } = useApi()
+
+    // Crear nueva consulta (siempre POST desde el formulario principal)
     const consultaData = {
       historialClinicoId: historialId,
       veterinarioId: user.id,
@@ -424,31 +803,102 @@ const guardarConsulta = async () => {
       citaId: citaData.id ? parseInt(citaData.id) : null,
       signosVitales: Object.keys(signosVitales).length > 0 ? signosVitales : null
     }
-
-    await axios.post(
-      'http://localhost:8080/api/v1/consultas',
-      consultaData,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      }
-    )
+    
+    // Crear consulta con signos vitales
+    await post('/v1/consultas', consultaData)
+    
+    // Recargar consultas
+    await historialesStore.fetchConsultasByHistorial(historialId)
+    consultas.value = historialesStore.consultas.sort((a, b) => {
+      const fechaA = a.fechaConsulta || a.fecha || ''
+      const fechaB = b.fechaConsulta || b.fecha || ''
+      return new Date(fechaB) - new Date(fechaA)
+    })
 
     showSuccess('Consulta guardada exitosamente')
-    limpiarFormulario()
-    await cargarConsultas()
-
-    // Si vino desde una cita, limpiar los parámetros de query
-    if (fromCita.value) {
-      router.replace({ path: `/pacientes/${route.params.id}/historial` })
+    
+    // Si vino desde una cita en progreso, completar la cita automáticamente
+    if (fromCita.value && enProgreso.value && citaData.id) {
+      try {
+        await citasStore.completarCita(parseInt(citaData.id))
+        showSuccess('Consulta guardada y cita completada exitosamente')
+      } catch (error) {
+        console.error('Error al completar la cita:', error)
+        showError('Consulta guardada, pero no se pudo completar la cita automáticamente')
+      }
     }
+    
+    limpiarFormulario()
+
+    // Si vino desde una cita, redirigir a la lista de citas
+    if (fromCita.value) {
+      router.push('/citas')
+      return
+    }
+    
+    await cargarConsultas()
   } catch (error) {
     console.error('Error al guardar consulta:', error)
     const mensaje = error.response?.data?.userMessage ||
                     error.response?.data?.message ||
                     'Error al guardar la consulta'
+    showError(mensaje)
+  } finally {
+    guardando.value = false
+  }
+}
+
+// Función para guardar desde el diálogo de edición
+const guardarConsultaEditar = async () => {
+  const { valid } = await formEditarRef.value.validate()
+
+  if (!valid) {
+    showError('Por favor, complete todos los campos requeridos')
+    return
+  }
+
+  if (!consultaEditando.value) {
+    showError('No se encontró la consulta a editar')
+    return
+  }
+
+  guardando.value = true
+
+  try {
+    const token = localStorage.getItem('token')
+    
+    if (!token) {
+      showError('No hay sesión activa. Por favor, inicie sesión nuevamente.')
+      guardando.value = false
+      return
+    }
+
+    // Preparar signos vitales
+    const signosVitales = {}
+    if (consultaEditar.peso) signosVitales.pesoKg = parseFloat(consultaEditar.peso)
+    if (consultaEditar.temperatura) signosVitales.temperatura = parseFloat(consultaEditar.temperatura)
+    if (consultaEditar.frecuenciaCardiaca) signosVitales.frecuenciaCardiaca = parseInt(consultaEditar.frecuenciaCardiaca)
+
+    // Actualizar consulta existente
+    const consultaData = {
+      motivo: consultaEditar.motivoConsulta,
+      anamnesis: consultaEditar.sintomas || null,
+      examenFisico: consultaEditar.diagnostico || null,
+      planTratamiento: consultaEditar.tratamiento || null,
+      observaciones: consultaEditar.observaciones || null,
+      signosVitales: Object.keys(signosVitales).length > 0 ? signosVitales : null
+    }
+
+    await put(`/v1/consultas/${consultaEditando.value.id}`, consultaData)
+
+    showSuccess('Consulta actualizada exitosamente')
+    cancelarEdicion()
+    await cargarConsultas()
+  } catch (error) {
+    console.error('Error al actualizar consulta:', error)
+    const mensaje = error.response?.data?.userMessage ||
+                    error.response?.data?.message ||
+                    'Error al actualizar la consulta'
     showError(mensaje)
   } finally {
     guardando.value = false

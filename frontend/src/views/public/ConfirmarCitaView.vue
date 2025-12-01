@@ -81,7 +81,7 @@
                     <template v-slot:prepend>
                       <v-icon>mdi-medical-bag</v-icon>
                     </template>
-                    <v-list-item-title><strong>Servicio:</strong> {{ citaData.tipoServicioObj?.nombre || 'Consulta General' }}</v-list-item-title>
+                    <v-list-item-title><strong>Servicio:</strong> {{ citaData.tipoServicioNombre || 'Consulta General' }}</v-list-item-title>
                   </v-list-item>
 
                   <v-divider></v-divider>

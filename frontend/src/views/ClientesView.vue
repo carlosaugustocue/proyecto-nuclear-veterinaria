@@ -48,6 +48,35 @@
             :sort-by="[{ key: 'nombre', order: 'asc' }]"
             class="elevation-1"
           >
+            <!-- Mascotas -->
+            <template v-slot:item.mascotas="{ item }">
+              <div v-if="item.pacientes && item.pacientes.length > 0">
+                <v-chip
+                  v-for="(paciente, index) in item.pacientes.slice(0, 3)"
+                  :key="paciente.id || index"
+                  size="small"
+                  color="primary"
+                  variant="outlined"
+                  class="mr-1 mb-1"
+                >
+                  <v-icon size="x-small" class="mr-1">mdi-paw</v-icon>
+                  {{ paciente.nombre }}
+                </v-chip>
+                <v-chip
+                  v-if="item.pacientes.length > 3"
+                  size="small"
+                  color="grey"
+                  variant="outlined"
+                >
+                  +{{ item.pacientes.length - 3 }} más
+                </v-chip>
+                <div v-if="item.cantidadPacientesActivos !== undefined" class="text-caption text-grey mt-1">
+                  {{ item.cantidadPacientesActivos }} activa{{ item.cantidadPacientesActivos !== 1 ? 's' : '' }}
+                </div>
+              </div>
+              <span v-else class="text-grey">Sin mascotas</span>
+            </template>
+
             <template v-slot:item.actions="{ item }">
               <v-btn
                 size="small"
@@ -72,8 +101,22 @@
               ></v-btn>
             </template>
 
+            <!-- Nombre -->
+            <template v-slot:item.nombreCompleto="{ item }">
+              <div class="d-flex align-center">
+                <v-avatar color="blue" size="32" class="mr-3">
+                  <v-icon color="white" size="small">mdi-account</v-icon>
+                </v-avatar>
+                <div>
+                  <div class="font-weight-medium">{{ item.nombreCompleto || `${item.nombre || ''} ${item.apellido || ''}`.trim() }}</div>
+                  <div v-if="item.dni" class="text-caption text-grey">Documento de Identidad: {{ item.dni }}</div>
+                </div>
+              </div>
+            </template>
+
             <template v-slot:no-data>
-              <v-alert type="info" text class="my-6">
+              <v-alert type="info" variant="tonal" class="my-6">
+                <v-icon class="mr-2">mdi-information</v-icon>
                 No hay clientes registrados
               </v-alert>
             </template>
@@ -96,12 +139,12 @@ const filters = reactive({
 })
 
 const headers = [
-  { title: 'Nombre', value: 'nombre' },
-  { title: 'Email', value: 'email' },
-  { title: 'Teléfono', value: 'telefono' },
-  { title: 'Ciudad', value: 'ciudad' },
-  { title: 'Mascotas', value: 'mascotas' },
-  { title: 'Acciones', value: 'actions', sortable: false },
+  { title: 'Nombre', value: 'nombreCompleto', width: '200' },
+  { title: 'Email', value: 'email', width: '200' },
+  { title: 'Teléfono', value: 'telefono', width: '150' },
+  { title: 'Ciudad', value: 'ciudad', width: '120' },
+  { title: 'Mascotas', value: 'mascotas', width: '200', sortable: false },
+  { title: 'Acciones', value: 'actions', sortable: false, width: '150' },
 ]
 
 const loading = computed(() => clientesStore.loading)

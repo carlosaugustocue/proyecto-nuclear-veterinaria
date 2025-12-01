@@ -42,7 +42,7 @@
           <template v-slot:prepend>
             <v-icon>mdi-paw</v-icon>
           </template>
-          <v-list-item-title>Pacientes</v-list-item-title>
+          <v-list-item-title>Mascotas</v-list-item-title>
         </v-list-item>
 
         <v-list-item to="/clientes" @click="drawer = false">

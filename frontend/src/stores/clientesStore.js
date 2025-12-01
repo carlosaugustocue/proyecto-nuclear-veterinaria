@@ -17,6 +17,11 @@ export const useClientesStore = defineStore('clientes', () => {
       ...dto,
       tipoDocumentoNombre: dto.tipoDocumento?.nombre || dto.tipoDocumento || '',
       nombreCompleto: dto.nombreCompleto || `${dto.nombre || ''} ${dto.apellido || ''}`.trim(),
+      // Incluir pacientes/mascotas del DTO
+      pacientes: dto.pacientes || [],
+      cantidadPacientesActivos: dto.cantidadPacientesActivos || 0,
+      // Alias para compatibilidad
+      mascotas: dto.pacientes || [],
     }
   }
 

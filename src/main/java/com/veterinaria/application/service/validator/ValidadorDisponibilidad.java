@@ -51,27 +51,55 @@ public class ValidadorDisponibilidad {
     public boolean verificarDisponibilidadVeterinario(Usuario veterinario, LocalDate fecha,
                                                        LocalTime horaInicio, Integer duracionMinutos,
                                                        Long citaIdExcluir) {
+        log.info("Verificando disponibilidad - Veterinario: {}, Fecha: {}, Hora: {}, Duración: {} min", 
+                veterinario.getId(), fecha, horaInicio, duracionMinutos);
+        
         // 1. Verificar que la fecha no sea pasada
-        if (fecha.isBefore(LocalDate.now())) {
-            log.warn("Fecha pasada: {}", fecha);
+        LocalDate hoy = LocalDate.now();
+        log.info("Validando fecha - Fecha solicitada: {}, Fecha actual: {}", fecha, hoy);
+        
+        if (fecha.isBefore(hoy)) {
+            log.error("❌ VALIDACIÓN FALLIDA: Fecha pasada: {} (hoy es: {})", fecha, hoy);
             return false;
         }
+        
+        // Permitir citas para hoy si la hora es futura
+        if (fecha.equals(hoy)) {
+            LocalTime ahora = LocalTime.now();
+            log.info("Fecha es hoy - Hora solicitada: {}, Hora actual: {}", horaInicio, ahora);
+            if (horaInicio.isBefore(ahora)) {
+                log.error("❌ VALIDACIÓN FALLIDA: Hora pasada para hoy: {} (hora actual: {})", horaInicio, ahora);
+                return false;
+            }
+        }
+        
+        log.info("✓ Fecha válida");
 
         // 2. Verificar horario hábil
         if (!verificarHorarioHabil(fecha, horaInicio, duracionMinutos)) {
-            log.warn("Fuera de horario hábil: {} {}", fecha, horaInicio);
+            log.warn("Fuera de horario hábil: {} {} (duración: {} min)", fecha, horaInicio, duracionMinutos);
             return false;
         }
 
         // 3. Verificar conflictos con otras citas
+        log.info("Buscando conflictos - Veterinario ID: {}, Fecha: {}, Hora inicio: {}, Duración: {} min", 
+                veterinario.getId(), fecha, horaInicio, duracionMinutos);
+        
         List<Cita> conflictos = verificarConflictos(veterinario, fecha, horaInicio,
                 duracionMinutos, citaIdExcluir);
 
         if (!conflictos.isEmpty()) {
-            log.warn("Conflicto de horario encontrado. Citas en conflicto: {}", conflictos.size());
+            log.error("❌ CONFLICTO ENCONTRADO: {} cita(s) en conflicto - IDs: {}", 
+                    conflictos.size(), 
+                    conflictos.stream().map(c -> String.format("ID:%d (Fecha:%s Hora:%s Duración:%d)", 
+                            c.getId(), c.getFecha(), c.getHora(), c.getDuracionEstimada())).toList());
             return false;
         }
+        
+        log.info("✓ Sin conflictos de horario");
 
+        log.info("Disponibilidad confirmada para veterinario {} en {} a las {}", 
+                veterinario.getId(), fecha, horaInicio);
         return true;
     }
 
@@ -86,7 +114,7 @@ public class ValidadorDisponibilidad {
         // Verificar si es día laborable (lunes a sábado)
         DayOfWeek diaSemana = fecha.getDayOfWeek();
         if (diaSemana == DayOfWeek.SUNDAY) {
-            log.warn("No se atiende los domingos");
+            log.warn("No se atiende los domingos - Fecha: {}", fecha);
             return false;
         }
 
@@ -94,19 +122,27 @@ public class ValidadorDisponibilidad {
         LocalTime apertura = LocalTime.parse(horarioApertura);
         LocalTime cierre = LocalTime.parse(horarioCierre);
 
+        log.info("Verificando horario hábil - Apertura: {}, Cierre: {}, Hora inicio: {}, Duración: {} min", 
+                apertura, cierre, horaInicio, duracionMinutos);
+
         // Verificar que la cita inicie dentro del horario
         if (horaInicio.isBefore(apertura)) {
-            log.warn("Hora {} antes de la apertura {}", horaInicio, apertura);
+            log.warn("Hora {} antes de la apertura {} - Fecha: {}", horaInicio, apertura, fecha);
             return false;
         }
 
         // Verificar que la cita termine antes del cierre
         LocalTime horaFin = horaInicio.plusMinutes(duracionMinutos);
+        log.info("Calculando hora fin - Hora inicio: {}, Duración: {} min, Hora fin calculada: {}, Cierre: {}", 
+                horaInicio, duracionMinutos, horaFin, cierre);
+        
         if (horaFin.isAfter(cierre)) {
-            log.warn("Hora fin {} después del cierre {}", horaFin, cierre);
+            log.error("❌ VALIDACIÓN FALLIDA: Hora fin {} después del cierre {} - Hora inicio: {}, Duración: {} min, Fecha: {}", 
+                    horaFin, cierre, horaInicio, duracionMinutos, fecha);
             return false;
         }
 
+        log.info("✓ Horario hábil válido - Hora inicio: {}, Hora fin: {}", horaInicio, horaFin);
         return true;
     }
 

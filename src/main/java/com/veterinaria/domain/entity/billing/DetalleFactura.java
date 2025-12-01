@@ -2,6 +2,7 @@ package com.veterinaria.domain.entity.billing;
 
 import com.veterinaria.domain.entity.BaseAuditableEntity;
 import com.veterinaria.domain.entity.appointments.TipoServicio;
+import com.veterinaria.domain.entity.inventory.Producto;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -45,6 +46,13 @@ public class DetalleFactura extends BaseAuditableEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "tipo_servicio_id")
     private TipoServicio tipoServicio;
+
+    /**
+     * Producto del inventario (opcional, para productos vendidos)
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "producto_id")
+    private Producto producto;
 
     /**
      * Descripción del item
@@ -124,11 +132,19 @@ public class DetalleFactura extends BaseAuditableEntity {
     }
 
     /**
-     * Verifica si es un producto (no tiene tipo de servicio)
-     * @return true si no tiene tipo de servicio
+     * Verifica si es un producto del inventario
+     * @return true si tiene producto asociado
      */
-    public boolean esProducto() {
-        return tipoServicio == null;
+    public boolean esProductoInventario() {
+        return producto != null;
+    }
+
+    /**
+     * Verifica si es un item manual (no tiene servicio ni producto)
+     * @return true si no tiene tipo de servicio ni producto
+     */
+    public boolean esItemManual() {
+        return tipoServicio == null && producto == null;
     }
 
     @Override

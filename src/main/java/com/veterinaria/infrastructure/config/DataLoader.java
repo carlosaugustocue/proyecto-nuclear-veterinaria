@@ -1,16 +1,20 @@
 package com.veterinaria.infrastructure.config;
 
 import com.veterinaria.application.repository.PermisoRepository;
+import com.veterinaria.application.repository.ProductoRepository;
 import com.veterinaria.application.repository.RazaRepository;
 import com.veterinaria.application.repository.RolRepository;
 import com.veterinaria.application.repository.UsuarioRepository;
 import com.veterinaria.domain.constants.PermisosDelSistema;
+import com.veterinaria.domain.entity.inventory.Producto;
 import com.veterinaria.domain.entity.patients.Raza;
 import com.veterinaria.domain.entity.security.Permiso;
 import com.veterinaria.domain.entity.security.Rol;
 import com.veterinaria.domain.entity.security.Usuario;
+import com.veterinaria.domain.enums.CategoriaProducto;
 import com.veterinaria.domain.enums.TipoEspecie;
 import com.veterinaria.domain.enums.TipoUsuario;
+import com.veterinaria.domain.enums.UnidadMedida;
 import com.veterinaria.domain.service.EncriptadorContrasena;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -18,6 +22,7 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
 
@@ -37,6 +42,7 @@ public class DataLoader implements CommandLineRunner {
     private final UsuarioRepository usuarioRepository;
     private final RazaRepository razaRepository;
     private final com.veterinaria.application.repository.TipoServicioRepository tipoServicioRepository;
+    private final ProductoRepository productoRepository;
     private final EncriptadorContrasena encriptadorContrasena;
 
     @Override
@@ -64,6 +70,10 @@ public class DataLoader implements CommandLineRunner {
             // 5. Crear tipos de servicio predefinidos
             crearTiposServicioPredefinidos();
             log.info("Tipos de servicio predefinidos creados");
+
+            // 6. Crear productos iniciales del inventario
+            crearProductosIniciales();
+            log.info("Productos iniciales del inventario creados");
 
             log.info("Carga de datos iniciales completada exitosamente");
 
@@ -746,6 +756,308 @@ public class DataLoader implements CommandLineRunner {
                             .build();
                     servicio.setIsActive(true);
                     return tipoServicioRepository.save(servicio);
+                });
+    }
+
+    /**
+     * Crea productos iniciales del inventario para una clínica veterinaria.
+     * Incluye alimentos, medicamentos, vacunas, materiales y accesorios comunes.
+     */
+    private void crearProductosIniciales() {
+        // Solo cargar si no existen productos
+        if (productoRepository.count() > 0) {
+            log.info("Productos del inventario ya existen, omitiendo creación");
+            return;
+        }
+
+        log.info("Creando productos iniciales del inventario...");
+
+        // ========== ALIMENTOS ==========
+        // Alimentos para Perros
+        crearProducto("ALIM-PERRO-001", "Alimento Premium para Perros Adultos 15kg", 
+                "Alimento balanceado premium para perros adultos, raza mediana a grande", 
+                CategoriaProducto.ALIMENTO, UnidadMedida.KILOGRAMO, 50, 10, 
+                45000.0, 65000.0, "Proveedor Alimentos Premium", null, null);
+        
+        crearProducto("ALIM-PERRO-002", "Alimento Premium para Perros Cachorros 12kg", 
+                "Alimento balanceado premium para cachorros, rico en proteínas", 
+                CategoriaProducto.ALIMENTO, UnidadMedida.KILOGRAMO, 30, 5, 
+                50000.0, 75000.0, "Proveedor Alimentos Premium", null, null);
+        
+        crearProducto("ALIM-PERRO-003", "Alimento para Perros Senior 10kg", 
+                "Alimento especializado para perros mayores de 7 años", 
+                CategoriaProducto.ALIMENTO, UnidadMedida.KILOGRAMO, 25, 5, 
+                42000.0, 62000.0, "Proveedor Alimentos Premium", null, null);
+        
+        crearProducto("ALIM-PERRO-004", "Alimento para Perros Pequeños 8kg", 
+                "Alimento balanceado para razas pequeñas", 
+                CategoriaProducto.ALIMENTO, UnidadMedida.KILOGRAMO, 40, 8, 
+                38000.0, 58000.0, "Proveedor Alimentos Premium", null, null);
+
+        // Alimentos para Gatos
+        crearProducto("ALIM-GATO-001", "Alimento Premium para Gatos Adultos 10kg", 
+                "Alimento balanceado premium para gatos adultos", 
+                CategoriaProducto.ALIMENTO, UnidadMedida.KILOGRAMO, 35, 7, 
+                48000.0, 72000.0, "Proveedor Alimentos Premium", null, null);
+        
+        crearProducto("ALIM-GATO-002", "Alimento Premium para Gatitos 8kg", 
+                "Alimento balanceado premium para gatitos, rico en DHA", 
+                CategoriaProducto.ALIMENTO, UnidadMedida.KILOGRAMO, 30, 6, 
+                52000.0, 78000.0, "Proveedor Alimentos Premium", null, null);
+        
+        crearProducto("ALIM-GATO-003", "Alimento Húmedo para Gatos (Lata 400g)", 
+                "Alimento húmedo en lata para gatos adultos", 
+                CategoriaProducto.ALIMENTO, UnidadMedida.UNIDAD, 100, 20, 
+                3500.0, 5500.0, "Proveedor Alimentos Premium", null, null);
+        
+        crearProducto("ALIM-GATO-004", "Alimento para Gatos Castrados 7kg", 
+                "Alimento especializado para gatos castrados, control de peso", 
+                CategoriaProducto.ALIMENTO, UnidadMedida.KILOGRAMO, 30, 6, 
+                45000.0, 68000.0, "Proveedor Alimentos Premium", null, null);
+
+        // Snacks y Premios
+        crearProducto("SNACK-001", "Premios para Perros (Bolsa 500g)", 
+                "Premios naturales para perros, entrenamiento y recompensa", 
+                CategoriaProducto.ALIMENTO, UnidadMedida.PAQUETE, 50, 10, 
+                12000.0, 20000.0, "Proveedor Snacks", null, null);
+        
+        crearProducto("SNACK-002", "Snacks para Gatos (Bolsa 200g)", 
+                "Snacks crujientes para gatos, sabor pescado", 
+                CategoriaProducto.ALIMENTO, UnidadMedida.PAQUETE, 60, 12, 
+                8000.0, 15000.0, "Proveedor Snacks", null, null);
+
+        // ========== MEDICAMENTOS ==========
+        // Antibióticos
+        crearProducto("MED-ANT-001", "Amoxicilina 500mg (Caja 20 tabletas)", 
+                "Antibiótico de amplio espectro para infecciones bacterianas", 
+                CategoriaProducto.MEDICAMENTO, UnidadMedida.CAJA, 30, 5, 
+                25000.0, 40000.0, "Laboratorio Veterinario", 
+                java.time.LocalDate.now().plusMonths(24), "LOT-2025-001");
+        
+        crearProducto("MED-ANT-002", "Cefalexina 500mg (Caja 16 cápsulas)", 
+                "Antibiótico para infecciones de piel y tejidos blandos", 
+                CategoriaProducto.MEDICAMENTO, UnidadMedida.CAJA, 25, 5, 
+                28000.0, 45000.0, "Laboratorio Veterinario", 
+                java.time.LocalDate.now().plusMonths(18), "LOT-2025-002");
+
+        // Antiinflamatorios
+        crearProducto("MED-ANTI-001", "Carprofeno 25mg (Caja 30 tabletas)", 
+                "Antiinflamatorio no esteroideo para dolor y artritis", 
+                CategoriaProducto.MEDICAMENTO, UnidadMedida.CAJA, 20, 4, 
+                35000.0, 55000.0, "Laboratorio Veterinario", 
+                java.time.LocalDate.now().plusMonths(30), "LOT-2025-003");
+        
+        crearProducto("MED-ANTI-002", "Meloxicam 1.5mg/ml (Frasco 15ml)", 
+                "Antiinflamatorio oral para perros y gatos", 
+                CategoriaProducto.MEDICAMENTO, UnidadMedida.FRASCO, 25, 5, 
+                18000.0, 30000.0, "Laboratorio Veterinario", 
+                java.time.LocalDate.now().plusMonths(24), "LOT-2025-004");
+
+        // Antiparasitarios
+        crearProducto("MED-PAR-001", "Fenbendazol 500mg (Caja 6 tabletas)", 
+                "Antiparasitario interno de amplio espectro", 
+                CategoriaProducto.MEDICAMENTO, UnidadMedida.CAJA, 40, 8, 
+                15000.0, 25000.0, "Laboratorio Veterinario", 
+                java.time.LocalDate.now().plusMonths(36), "LOT-2025-005");
+        
+        crearProducto("MED-PAR-002", "Praziquantel 50mg (Caja 4 tabletas)", 
+                "Antiparasitario para tenias y cestodos", 
+                CategoriaProducto.MEDICAMENTO, UnidadMedida.CAJA, 35, 7, 
+                12000.0, 20000.0, "Laboratorio Veterinario", 
+                java.time.LocalDate.now().plusMonths(36), "LOT-2025-006");
+
+        // Antihistamínicos
+        crearProducto("MED-ALER-001", "Cetirizina 10mg (Caja 20 tabletas)", 
+                "Antihistamínico para alergias y picaduras", 
+                CategoriaProducto.MEDICAMENTO, UnidadMedida.CAJA, 30, 6, 
+                18000.0, 30000.0, "Laboratorio Veterinario", 
+                java.time.LocalDate.now().plusMonths(24), "LOT-2025-007");
+
+        // ========== VACUNAS ==========
+        crearProducto("VAC-001", "Vacuna Múltiple Canina (Dosis)", 
+                "Vacuna contra moquillo, hepatitis, parvovirus y parainfluenza", 
+                CategoriaProducto.VACUNA, UnidadMedida.UNIDAD, 50, 10, 
+                15000.0, 30000.0, "Laboratorio Vacunas", 
+                java.time.LocalDate.now().plusMonths(12), "VAC-2025-001");
+        
+        crearProducto("VAC-002", "Vacuna Antirrábica (Dosis)", 
+                "Vacuna contra la rabia para perros y gatos", 
+                CategoriaProducto.VACUNA, UnidadMedida.UNIDAD, 60, 12, 
+                12000.0, 25000.0, "Laboratorio Vacunas", 
+                java.time.LocalDate.now().plusMonths(12), "VAC-2025-002");
+        
+        crearProducto("VAC-003", "Vacuna Múltiple Felina (Dosis)", 
+                "Vacuna contra panleucopenia, calicivirus y rinotraqueitis", 
+                CategoriaProducto.VACUNA, UnidadMedida.UNIDAD, 45, 9, 
+                16000.0, 32000.0, "Laboratorio Vacunas", 
+                java.time.LocalDate.now().plusMonths(12), "VAC-2025-003");
+        
+        crearProducto("VAC-004", "Vacuna contra Leishmaniosis (Dosis)", 
+                "Vacuna preventiva contra leishmaniosis canina", 
+                CategoriaProducto.VACUNA, UnidadMedida.UNIDAD, 20, 4, 
+                45000.0, 80000.0, "Laboratorio Vacunas", 
+                java.time.LocalDate.now().plusMonths(12), "VAC-2025-004");
+
+        // ========== MATERIAL MÉDICO ==========
+        crearProducto("MAT-001", "Jeringas Desechables 3ml (Caja 100 unidades)", 
+                "Jeringas desechables estériles de 3ml", 
+                CategoriaProducto.MATERIAL, UnidadMedida.CAJA, 20, 4, 
+                15000.0, 25000.0, "Proveedor Material Médico", null, null);
+        
+        crearProducto("MAT-002", "Jeringas Desechables 5ml (Caja 100 unidades)", 
+                "Jeringas desechables estériles de 5ml", 
+                CategoriaProducto.MATERIAL, UnidadMedida.CAJA, 20, 4, 
+                18000.0, 28000.0, "Proveedor Material Médico", null, null);
+        
+        crearProducto("MAT-003", "Agujas 21G (Caja 100 unidades)", 
+                "Agujas desechables estériles calibre 21G", 
+                CategoriaProducto.MATERIAL, UnidadMedida.CAJA, 25, 5, 
+                12000.0, 20000.0, "Proveedor Material Médico", null, null);
+        
+        crearProducto("MAT-004", "Guantes Quirúrgicos Talla M (Caja 100 unidades)", 
+                "Guantes de látex estériles talla mediana", 
+                CategoriaProducto.MATERIAL, UnidadMedida.CAJA, 15, 3, 
+                25000.0, 40000.0, "Proveedor Material Médico", null, null);
+        
+        crearProducto("MAT-005", "Gasas Estériles 10x10cm (Paquete 50 unidades)", 
+                "Gasas estériles para curaciones y procedimientos", 
+                CategoriaProducto.MATERIAL, UnidadMedida.PAQUETE, 30, 6, 
+                8000.0, 15000.0, "Proveedor Material Médico", null, null);
+        
+        crearProducto("MAT-006", "Vendas Elásticas 10cm x 5m (Unidad)", 
+                "Vendas elásticas para inmovilización y vendajes", 
+                CategoriaProducto.MATERIAL, UnidadMedida.UNIDAD, 40, 8, 
+                5000.0, 10000.0, "Proveedor Material Médico", null, null);
+        
+        crearProducto("MAT-007", "Algodón Estéril 500g", 
+                "Algodón estéril para limpieza y curaciones", 
+                CategoriaProducto.MATERIAL, UnidadMedida.UNIDAD, 25, 5, 
+                12000.0, 20000.0, "Proveedor Material Médico", null, null);
+        
+        crearProducto("MAT-008", "Alcohol Isopropílico 1L", 
+                "Alcohol para desinfección de material y superficies", 
+                CategoriaProducto.MATERIAL, UnidadMedida.LITRO, 20, 4, 
+                15000.0, 25000.0, "Proveedor Material Médico", null, null);
+        
+        crearProducto("MAT-009", "Clorhexidina 2% 500ml", 
+                "Solución antiséptica para limpieza de heridas", 
+                CategoriaProducto.MATERIAL, UnidadMedida.FRASCO, 15, 3, 
+                18000.0, 30000.0, "Proveedor Material Médico", 
+                java.time.LocalDate.now().plusMonths(24), "LOT-2025-008");
+        
+        crearProducto("MAT-010", "Sutura Nylon 3-0 (Caja 12 unidades)", 
+                "Hilo de sutura no absorbible para cirugías", 
+                CategoriaProducto.MATERIAL, UnidadMedida.CAJA, 10, 2, 
+                35000.0, 60000.0, "Proveedor Material Médico", null, null);
+
+        // ========== INSUMOS ==========
+        crearProducto("INS-001", "Suero Fisiológico 500ml (Bolsa)", 
+                "Solución salina estéril para fluidoterapia", 
+                CategoriaProducto.INSUMO, UnidadMedida.UNIDAD, 30, 6, 
+                8000.0, 15000.0, "Proveedor Insumos Médicos", 
+                java.time.LocalDate.now().plusMonths(18), "LOT-2025-009");
+        
+        crearProducto("INS-002", "Ringer Lactato 500ml (Bolsa)", 
+                "Solución de Ringer lactato para fluidoterapia", 
+                CategoriaProducto.INSUMO, UnidadMedida.UNIDAD, 25, 5, 
+                9000.0, 16000.0, "Proveedor Insumos Médicos", 
+                java.time.LocalDate.now().plusMonths(18), "LOT-2025-010");
+        
+        crearProducto("INS-003", "Catéter Intravenoso 20G (Unidad)", 
+                "Catéter para administración de fluidos intravenosos", 
+                CategoriaProducto.INSUMO, UnidadMedida.UNIDAD, 50, 10, 
+                3000.0, 6000.0, "Proveedor Insumos Médicos", null, null);
+        
+        crearProducto("INS-004", "Tubos de Sangre EDTA (Caja 100 unidades)", 
+                "Tubos para toma de muestras de sangre con anticoagulante", 
+                CategoriaProducto.INSUMO, UnidadMedida.CAJA, 10, 2, 
+                45000.0, 75000.0, "Proveedor Insumos Médicos", null, null);
+        
+        crearProducto("INS-005", "Jeringas para Anestesia 10ml (Caja 50 unidades)", 
+                "Jeringas especiales para administración de anestesia", 
+                CategoriaProducto.INSUMO, UnidadMedida.CAJA, 15, 3, 
+                20000.0, 35000.0, "Proveedor Insumos Médicos", null, null);
+
+        // ========== ACCESORIOS ==========
+        crearProducto("ACC-001", "Collar Elizabetano Talla M (Unidad)", 
+                "Collar isabelino para prevenir lamido de heridas", 
+                CategoriaProducto.ACCESORIO, UnidadMedida.UNIDAD, 30, 6, 
+                12000.0, 25000.0, "Proveedor Accesorios", null, null);
+        
+        crearProducto("ACC-002", "Collar Elizabetano Talla G (Unidad)", 
+                "Collar isabelino grande para perros grandes", 
+                CategoriaProducto.ACCESORIO, UnidadMedida.UNIDAD, 25, 5, 
+                15000.0, 28000.0, "Proveedor Accesorios", null, null);
+        
+        crearProducto("ACC-003", "Arnés Post-operatorio Talla M (Unidad)", 
+                "Arnés para protección post-quirúrgica", 
+                CategoriaProducto.ACCESORIO, UnidadMedida.UNIDAD, 20, 4, 
+                18000.0, 32000.0, "Proveedor Accesorios", null, null);
+        
+        crearProducto("ACC-004", "Bozal Ajustable Talla M (Unidad)", 
+                "Bozal de malla ajustable para perros medianos", 
+                CategoriaProducto.ACCESORIO, UnidadMedida.UNIDAD, 15, 3, 
+                10000.0, 20000.0, "Proveedor Accesorios", null, null);
+        
+        crearProducto("ACC-005", "Transportadora para Gatos (Unidad)", 
+                "Transportadora plástica para gatos, tamaño mediano", 
+                CategoriaProducto.ACCESORIO, UnidadMedida.UNIDAD, 10, 2, 
+                35000.0, 60000.0, "Proveedor Accesorios", null, null);
+        
+        crearProducto("ACC-006", "Plato de Alimentación Acero Inoxidable (Unidad)", 
+                "Plato de acero inoxidable para perros y gatos", 
+                CategoriaProducto.ACCESORIO, UnidadMedida.UNIDAD, 40, 8, 
+                8000.0, 15000.0, "Proveedor Accesorios", null, null);
+        
+        crearProducto("ACC-007", "Bebedero Automático (Unidad)", 
+                "Bebedero automático con filtro para perros y gatos", 
+                CategoriaProducto.ACCESORIO, UnidadMedida.UNIDAD, 20, 4, 
+                25000.0, 45000.0, "Proveedor Accesorios", null, null);
+        
+        crearProducto("ACC-008", "Cama Ortopédica Talla M (Unidad)", 
+                "Cama ortopédica para perros con problemas articulares", 
+                CategoriaProducto.ACCESORIO, UnidadMedida.UNIDAD, 8, 2, 
+                120000.0, 200000.0, "Proveedor Accesorios", null, null);
+        
+        crearProducto("ACC-009", "Juguetes Interactivos para Perros (Unidad)", 
+                "Juguetes para estimulación mental y ejercicio", 
+                CategoriaProducto.ACCESORIO, UnidadMedida.UNIDAD, 50, 10, 
+                15000.0, 28000.0, "Proveedor Accesorios", null, null);
+        
+        crearProducto("ACC-010", "Rascador para Gatos (Unidad)", 
+                "Rascador vertical con plataformas para gatos", 
+                CategoriaProducto.ACCESORIO, UnidadMedida.UNIDAD, 15, 3, 
+                45000.0, 75000.0, "Proveedor Accesorios", null, null);
+
+        log.info("Productos iniciales del inventario creados exitosamente");
+    }
+
+    /**
+     * Crea un producto si no existe
+     */
+    private void crearProducto(String codigo, String nombre, String descripcion,
+                               CategoriaProducto categoria, UnidadMedida unidadMedida,
+                               Integer stockActual, Integer stockMinimo,
+                               Double precioCompra, Double precioVenta,
+                               String proveedor, LocalDate fechaVencimiento, String lote) {
+        productoRepository.findByCodigo(codigo)
+                .orElseGet(() -> {
+                    Producto producto = Producto.builder()
+                            .codigo(codigo)
+                            .nombre(nombre)
+                            .descripcion(descripcion)
+                            .categoria(categoria)
+                            .unidadMedida(unidadMedida)
+                            .stockActual(stockActual)
+                            .stockMinimo(stockMinimo)
+                            .precioCompra(precioCompra)
+                            .precioVenta(precioVenta)
+                            .proveedor(proveedor)
+                            .fechaVencimiento(fechaVencimiento)
+                            .lote(lote)
+                            .build();
+                    producto.setIsActive(true);
+                    return productoRepository.save(producto);
                 });
     }
 }

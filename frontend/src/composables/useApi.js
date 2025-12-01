@@ -35,15 +35,33 @@ apiClient.interceptors.response.use(
     let errorMessage = 'Error desconocido'
 
     if (error.response?.data) {
-      // Formato Spring Boot: { message: "...", error: "...", status: 400 }
-      errorMessage = error.response.data.message ||
-                     error.response.data.error ||
-                     error.response.data.mensaje ||
-                     errorMessage
-
-      // Si hay errores de validación, concatenarlos
-      if (error.response.data.errors && Array.isArray(error.response.data.errors)) {
-        errorMessage = error.response.data.errors.join(', ')
+      const errorData = error.response.data
+      
+      // Manejar errores de validación de Bean Validation
+      if (errorData.errors) {
+        if (Array.isArray(errorData.errors)) {
+          // Formato: [{ field: "...", message: "..." }]
+          errorMessage = errorData.errors
+            .map(err => err.message || `${err.field}: ${err.defaultMessage || 'Error de validación'}`)
+            .join(', ')
+        } else if (typeof errorData.errors === 'object') {
+          // Formato: { "campo": ["mensaje1", "mensaje2"] }
+          const erroresArray = Object.entries(errorData.errors)
+            .map(([campo, mensajes]) => {
+              const mensajesArray = Array.isArray(mensajes) ? mensajes : [mensajes]
+              return mensajesArray.map(msg => `${campo}: ${msg}`).join(', ')
+            })
+            .flat()
+          errorMessage = erroresArray.join(', ')
+        }
+      }
+      
+      // Si no hay errores de validación específicos, usar mensaje general
+      if (!errorMessage || errorMessage === 'Error desconocido') {
+        errorMessage = errorData.message ||
+                       errorData.error ||
+                       errorData.mensaje ||
+                       errorMessage
       }
     } else if (error.message) {
       errorMessage = error.message

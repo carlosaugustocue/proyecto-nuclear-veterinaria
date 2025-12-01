@@ -9,13 +9,17 @@ import com.veterinaria.application.mapper.FacturaMapper;
 import com.veterinaria.application.mapper.PagoMapper;
 import com.veterinaria.application.repository.*;
 import com.veterinaria.application.service.FacturaService;
+import com.veterinaria.application.service.MovimientoInventarioService;
 import com.veterinaria.application.service.notification.EmailService;
+import com.veterinaria.application.dto.inventory.CreateMovimientoRequest;
 import com.veterinaria.domain.entity.appointments.Cita;
 import com.veterinaria.domain.entity.appointments.TipoServicio;
 import com.veterinaria.domain.entity.billing.*;
+import com.veterinaria.domain.entity.inventory.Producto;
 import com.veterinaria.domain.entity.patients.Cliente;
 import com.veterinaria.domain.entity.security.Usuario;
 import com.veterinaria.domain.enums.EstadoFactura;
+import com.veterinaria.domain.enums.TipoMovimiento;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -44,6 +48,8 @@ public class FacturaServiceImpl implements FacturaService {
     private final CitaRepository citaRepository;
     private final UsuarioRepository usuarioRepository;
     private final TipoServicioRepository tipoServicioRepository;
+    private final ProductoRepository productoRepository;
+    private final MovimientoInventarioService movimientoInventarioService;
     private final FacturaMapper facturaMapper;
     private final DetalleFacturaMapper detalleFacturaMapper;
     private final PagoMapper pagoMapper;
@@ -96,40 +102,83 @@ public class FacturaServiceImpl implements FacturaService {
         // 6. Guardar
         Factura guardada = facturaRepository.save(factura);
 
-        // 7. Enviar notificación por email al cliente
-        try {
-            String detalles = generarResumenDetalles(guardada);
-            emailService.notificarFacturaGenerada(
-                    cliente.getEmail(),
-                    cliente.getNombreCompleto(),
-                    guardada.getNumeroFactura(),
-                    guardada.getTotal(),
-                    detalles
-            );
-            log.info("Email de factura enviado a: {}", cliente.getEmail());
-        } catch (Exception e) {
-            log.error("Error al enviar email de factura: {}", e.getMessage());
-            // No interrumpir el flujo si falla el email
-        }
+        // NOTA: El email se enviará cuando se agregue el primer detalle a la factura
+        // para asegurar que la factura tenga información completa antes de notificar al cliente
 
         log.info("Factura creada exitosamente: {}", guardada.getNumeroFactura());
         return facturaMapper.toDTO(guardada);
     }
 
     /**
-     * Genera un resumen simple de los detalles de la factura
+     * Genera un resumen detallado de los detalles de la factura en formato HTML
      */
     private String generarResumenDetalles(Factura factura) {
         StringBuilder resumen = new StringBuilder();
         List<DetalleFactura> detalles = detalleFacturaRepository.findByFacturaId(factura.getId());
 
+        if (detalles == null || detalles.isEmpty()) {
+            return "<p>No hay detalles registrados en esta factura.</p>";
+        }
+
+        // Crear tabla HTML para los detalles
+        resumen.append("<table style='width: 100%; border-collapse: collapse; margin: 10px 0;'>");
+        resumen.append("<thead>");
+        resumen.append("<tr style='background-color: #f5f5f5;'>");
+        resumen.append("<th style='padding: 8px; text-align: left; border-bottom: 2px solid #ddd;'>Cant.</th>");
+        resumen.append("<th style='padding: 8px; text-align: left; border-bottom: 2px solid #ddd;'>Descripción</th>");
+        resumen.append("<th style='padding: 8px; text-align: right; border-bottom: 2px solid #ddd;'>Precio Unit.</th>");
+        resumen.append("<th style='padding: 8px; text-align: right; border-bottom: 2px solid #ddd;'>Subtotal</th>");
+        resumen.append("</tr>");
+        resumen.append("</thead>");
+        resumen.append("<tbody>");
+
         for (DetalleFactura detalle : detalles) {
             if (detalle.getIsActive()) {
-                resumen.append(String.format("%dx %s - S/ %.2f<br>",
-                        detalle.getCantidad(),
-                        detalle.getDescripcion(),
-                        detalle.getTotal()));
+                resumen.append("<tr>");
+                resumen.append(String.format("<td style='padding: 8px; border-bottom: 1px solid #eee;'>%d</td>", 
+                        detalle.getCantidad()));
+                resumen.append(String.format("<td style='padding: 8px; border-bottom: 1px solid #eee;'>%s</td>", 
+                        detalle.getDescripcion() != null ? detalle.getDescripcion() : "Sin descripción"));
+                resumen.append(String.format("<td style='padding: 8px; text-align: right; border-bottom: 1px solid #eee;'>S/ %.2f</td>", 
+                        detalle.getPrecioUnitario() != null ? detalle.getPrecioUnitario() : 0.0));
+                resumen.append(String.format("<td style='padding: 8px; text-align: right; border-bottom: 1px solid #eee; font-weight: bold;'>S/ %.2f</td>", 
+                        detalle.getTotal() != null ? detalle.getTotal() : 0.0));
+                resumen.append("</tr>");
             }
+        }
+
+        resumen.append("</tbody>");
+        resumen.append("</table>");
+
+        // Agregar resumen financiero si hay información disponible
+        if (factura.getSubtotal() != null || factura.getTotalDescuentos() != null || 
+            factura.getTotalImpuestos() != null) {
+            resumen.append("<div style='margin-top: 15px; padding: 10px; background-color: #f9f9f9; border-radius: 4px;'>");
+            resumen.append("<table style='width: 100%; border-collapse: collapse;'>");
+            
+            if (factura.getSubtotal() != null) {
+                resumen.append(String.format(
+                    "<tr><td style='padding: 5px; text-align: right;'><strong>Subtotal:</strong></td>" +
+                    "<td style='padding: 5px; text-align: right;'>S/ %.2f</td></tr>",
+                    factura.getSubtotal()));
+            }
+            
+            if (factura.getTotalDescuentos() != null && factura.getTotalDescuentos() > 0) {
+                resumen.append(String.format(
+                    "<tr><td style='padding: 5px; text-align: right;'><strong>Descuentos:</strong></td>" +
+                    "<td style='padding: 5px; text-align: right; color: #d32f2f;'>-S/ %.2f</td></tr>",
+                    factura.getTotalDescuentos()));
+            }
+            
+            if (factura.getTotalImpuestos() != null && factura.getTotalImpuestos() > 0) {
+                resumen.append(String.format(
+                    "<tr><td style='padding: 5px; text-align: right;'><strong>Impuestos:</strong></td>" +
+                    "<td style='padding: 5px; text-align: right;'>S/ %.2f</td></tr>",
+                    factura.getTotalImpuestos()));
+            }
+            
+            resumen.append("</table>");
+            resumen.append("</div>");
         }
 
         return resumen.toString();
@@ -268,9 +317,37 @@ public class FacturaServiceImpl implements FacturaService {
                     ));
         }
 
+        // 3.1. Validar producto del inventario si se proporciona
+        com.veterinaria.domain.entity.inventory.Producto producto = null;
+        if (request.getProductoId() != null) {
+            producto = productoRepository.findById(request.getProductoId())
+                    .orElseThrow(() -> new ResourceNotFoundException(
+                            "Producto no encontrado con ID: " + request.getProductoId()
+                    ));
+            
+            // Validar que el producto tenga stock suficiente
+            if (producto.getStockActual() < request.getCantidad()) {
+                throw new BusinessRuleException(
+                        String.format("Stock insuficiente. Disponible: %d, Solicitado: %d",
+                                producto.getStockActual(), request.getCantidad())
+                );
+            }
+            
+            // Si no se proporciona precio, usar el precio de venta del producto
+            if (request.getPrecioUnitario() == null || request.getPrecioUnitario() == 0) {
+                request.setPrecioUnitario(producto.getPrecioVenta());
+            }
+            
+            // Si no se proporciona descripción, usar el nombre del producto
+            if (request.getDescripcion() == null || request.getDescripcion().trim().isEmpty()) {
+                request.setDescripcion(producto.getNombre());
+            }
+        }
+
         // 4. Crear detalle usando mapper
         DetalleFactura detalle = detalleFacturaMapper.toEntity(request);
         detalle.setTipoServicio(tipoServicio);
+        detalle.setProducto(producto);
 
         // 5. Calcular subtotal y total del detalle
         calcularTotalesDetalle(detalle);
@@ -284,6 +361,9 @@ public class FacturaServiceImpl implements FacturaService {
         // 8. Guardar
         detalleFacturaRepository.save(detalle);
         facturaRepository.save(factura);
+
+        // NOTA: El email se enviará cuando se registre el primer pago para asegurar
+        // que la factura tenga todos sus detalles (servicios y productos) antes de notificar
 
         log.info("Detalle agregado exitosamente a factura: {}", factura.getNumeroFactura());
         return detalleFacturaMapper.toDTO(detalle);
@@ -474,8 +554,88 @@ public class FacturaServiceImpl implements FacturaService {
         pagoRepository.save(pago);
         facturaRepository.save(factura);
 
+        // 10. Si es el primer pago registrado, enviar email de notificación con la factura completa
+        long cantidadPagos = pagoRepository.findByFacturaId(facturaId)
+                .stream()
+                .filter(p -> p.getIsActive())
+                .count();
+        
+        if (cantidadPagos == 1) {
+            // Es el primer pago, enviar email con la factura completa (incluyendo todos los detalles: servicios y productos)
+            try {
+                Cliente cliente = factura.getCliente();
+                if (cliente != null && cliente.getEmail() != null && !cliente.getEmail().trim().isEmpty()) {
+                    // Recargar la factura para obtener los totales actualizados
+                    Factura facturaActualizada = facturaRepository.findById(facturaId)
+                            .orElse(factura);
+                    
+                    String detallesHtml = generarResumenDetalles(facturaActualizada);
+                    emailService.notificarFacturaGenerada(
+                            cliente.getEmail(),
+                            cliente.getNombreCompleto(),
+                            facturaActualizada.getNumeroFactura(),
+                            facturaActualizada.getFechaEmision(),
+                            facturaActualizada.getSubtotal() != null ? facturaActualizada.getSubtotal() : 0.0,
+                            facturaActualizada.getTotalDescuentos() != null ? facturaActualizada.getTotalDescuentos() : 0.0,
+                            facturaActualizada.getTotalImpuestos() != null ? facturaActualizada.getTotalImpuestos() : 0.0,
+                            facturaActualizada.getTotal() != null ? facturaActualizada.getTotal() : 0.0,
+                            detallesHtml
+                    );
+                    log.info("Email de factura enviado a: {} (primer pago registrado - incluye todos los detalles)", cliente.getEmail());
+                } else {
+                    log.warn("No se puede enviar email de factura: cliente sin email válido");
+                }
+            } catch (Exception e) {
+                log.error("Error al enviar email de factura después de registrar primer pago: {}", e.getMessage(), e);
+                // No interrumpir el flujo si falla el email
+            }
+        }
+
+        // 11. Si la factura quedó completamente pagada, descontar productos del inventario
+        if (factura.getSaldoPendiente() == 0.0 && factura.getEstado() == EstadoFactura.PAGADA) {
+            descontarProductosDelInventario(factura, usuarioRegistro.getId());
+        }
+
         log.info("Pago registrado exitosamente. Nuevo saldo pendiente: {}", factura.getSaldoPendiente());
         return pagoMapper.toDTO(pago);
+    }
+
+    /**
+     * Descuenta productos del inventario cuando una factura es pagada completamente
+     */
+    private void descontarProductosDelInventario(Factura factura, Long usuarioId) {
+        log.info("Descontando productos del inventario para factura: {}", factura.getNumeroFactura());
+        
+        // Obtener todos los detalles de la factura que tienen productos asociados
+        List<DetalleFactura> detalles = detalleFacturaRepository.findByFacturaId(factura.getId());
+        
+        for (DetalleFactura detalle : detalles) {
+            if (detalle.getProducto() != null && detalle.getIsActive()) {
+                Producto producto = detalle.getProducto();
+                Integer cantidad = detalle.getCantidad();
+                
+                try {
+                    // Crear movimiento de salida para el inventario
+                    CreateMovimientoRequest movimientoRequest = CreateMovimientoRequest.builder()
+                            .productoId(producto.getId())
+                            .tipo(TipoMovimiento.SALIDA)
+                            .cantidad(cantidad)
+                            .motivo(String.format("Venta - Factura %s", factura.getNumeroFactura()))
+                            .observaciones(String.format("Producto vendido en factura %s, detalle ID: %d", 
+                                    factura.getNumeroFactura(), detalle.getId()))
+                            .build();
+                    
+                    movimientoInventarioService.registrarMovimiento(movimientoRequest);
+                    log.info("Producto {} (ID: {}) descontado del inventario. Cantidad: {}", 
+                            producto.getNombre(), producto.getId(), cantidad);
+                } catch (Exception e) {
+                    log.error("Error al descontar producto {} del inventario: {}", 
+                            producto.getNombre(), e.getMessage(), e);
+                    // No lanzar excepción para no interrumpir el proceso de pago
+                    // El movimiento de inventario se puede registrar manualmente después
+                }
+            }
+        }
     }
 
     @Override

@@ -114,6 +114,12 @@ const routes = [
     meta: { requiresAuth: true },
   },
   {
+    path: '/facturas/:id/editar',
+    name: 'EditarFactura',
+    component: () => import('@/views/facturas/FacturaFormView.vue'),
+    meta: { requiresAuth: true },
+  },
+  {
     path: '/usuarios',
     name: 'Usuarios',
     component: UsuariosView,

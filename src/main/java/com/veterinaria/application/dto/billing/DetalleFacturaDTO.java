@@ -20,6 +20,8 @@ public class DetalleFacturaDTO {
     private Long facturaId;
     private Long tipoServicioId;
     private String tipoServicioNombre;
+    private Long productoId;
+    private String productoNombre;
     private String descripcion;
     private Integer cantidad;
     private Double precioUnitario;

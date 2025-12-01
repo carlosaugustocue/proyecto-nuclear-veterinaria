@@ -3,7 +3,7 @@
     <v-row>
       <v-col cols="12">
         <h1>Historia Clínica</h1>
-        <p class="text-subtitle-1 mt-2">Seleccione un paciente para ver su historial médico</p>
+        <p class="text-subtitle-1 mt-2">Seleccione una mascota para ver su historial médico</p>
       </v-col>
     </v-row>
 
@@ -14,7 +14,7 @@
           :items="pacientes"
           item-title="nombre"
           item-value="id"
-          label="Buscar Paciente"
+          label="Buscar Mascota"
           prepend-icon="mdi-magnify"
           @update:model-value="loadHistorial"
         ></v-autocomplete>
@@ -84,13 +84,13 @@
             <v-icon left class="mr-2">mdi-history</v-icon>
             Historial de Atenciones ({{ consultas.length }})
           </v-card-title>
-          <v-card-text class="pa-4">
+          <v-card-text class="pa-4" style="max-height: 70vh; overflow-y: auto;">
             <v-alert v-if="consultas.length === 0" type="info" variant="tonal" class="my-4">
               <v-icon left>mdi-information</v-icon>
               No hay consultas registradas para este paciente
             </v-alert>
 
-            <v-timeline side="end" v-else>
+            <v-timeline side="end" v-else density="compact">
               <v-timeline-item
                 v-for="(consulta, index) in consultas"
                 :key="consulta.id"
@@ -106,56 +106,86 @@
                   </v-chip>
                 </template>
 
-                <v-card elevation="3" class="mb-2">
-                  <v-card-title class="d-flex align-center bg-grey-lighten-4">
-                    <v-icon color="primary" class="mr-2">mdi-stethoscope</v-icon>
-                    {{ consulta.motivo || 'Sin motivo especificado' }}
+                <v-card elevation="3" class="mb-2" style="max-width: 100%; word-wrap: break-word;">
+                  <v-card-title class="d-flex align-center bg-grey-lighten-4 py-2">
+                    <v-icon color="primary" class="mr-2" size="small">mdi-stethoscope</v-icon>
+                    <span class="text-subtitle-2 text-truncate" style="max-width: 80%;">
+                      {{ truncateText(consulta.motivo || 'Sin motivo especificado', 60) }}
+                    </span>
                   </v-card-title>
 
-                  <v-card-subtitle class="pt-2">
-                    <v-icon size="small" class="mr-1">mdi-doctor</v-icon>
-                    Dr. {{ consulta.veterinarioNombre || 'No especificado' }}
+                  <v-card-subtitle class="pt-2 pb-2">
+                    <v-icon size="x-small" class="mr-1">mdi-doctor</v-icon>
+                    <span class="text-caption">Dr. {{ consulta.veterinarioNombre || 'No especificado' }}</span>
                   </v-card-subtitle>
 
                   <v-divider></v-divider>
 
-                  <v-card-text class="pa-4">
-                    <v-row>
-                      <v-col cols="12" v-if="consulta.anamnesis">
-                        <div class="mb-3">
-                          <div class="d-flex align-center mb-2">
-                            <v-icon color="info" size="small" class="mr-2">mdi-clipboard-text</v-icon>
-                            <span class="text-subtitle-2 font-weight-bold">Anamnesis</span>
-                          </div>
-                          <div class="text-body-1 pl-7">
+                  <v-card-text class="pa-3" style="max-height: 500px; overflow-y: auto;">
+                    <v-expansion-panels variant="accordion" class="mt-2">
+                      <v-expansion-panel v-if="consulta.anamnesis">
+                        <v-expansion-panel-title>
+                          <v-icon color="info" size="small" class="mr-2">mdi-clipboard-text</v-icon>
+                          <span class="text-caption font-weight-bold">Anamnesis</span>
+                        </v-expansion-panel-title>
+                        <v-expansion-panel-text>
+                          <div class="text-body-2" style="word-wrap: break-word; white-space: pre-wrap;">
                             {{ consulta.anamnesis }}
                           </div>
-                        </div>
-                      </v-col>
+                        </v-expansion-panel-text>
+                      </v-expansion-panel>
 
-                      <v-col cols="12" v-if="consulta.examenFisico">
-                        <div class="mb-3">
-                          <div class="d-flex align-center mb-2">
-                            <v-icon color="primary" size="small" class="mr-2">mdi-stethoscope</v-icon>
-                            <span class="text-subtitle-2 font-weight-bold">Examen Físico</span>
-                          </div>
-                          <div class="text-body-1 pl-7">
+                      <v-expansion-panel v-if="consulta.examenFisico">
+                        <v-expansion-panel-title>
+                          <v-icon color="primary" size="small" class="mr-2">mdi-stethoscope</v-icon>
+                          <span class="text-caption font-weight-bold">Examen Físico</span>
+                        </v-expansion-panel-title>
+                        <v-expansion-panel-text>
+                          <div class="text-body-2" style="word-wrap: break-word; white-space: pre-wrap;">
                             {{ consulta.examenFisico }}
                           </div>
-                        </div>
-                      </v-col>
+                        </v-expansion-panel-text>
+                      </v-expansion-panel>
 
-                      <v-col cols="12" v-if="consulta.diagnosticos && consulta.diagnosticos.length > 0">
-                        <div class="mb-3">
-                          <div class="d-flex align-center mb-2">
-                            <v-icon color="error" size="small" class="mr-2">mdi-medical-bag</v-icon>
-                            <span class="text-subtitle-2 font-weight-bold">Diagnósticos</span>
+                      <v-expansion-panel v-if="consulta.planTratamiento">
+                        <v-expansion-panel-title>
+                          <v-icon color="success" size="small" class="mr-2">mdi-pill</v-icon>
+                          <span class="text-caption font-weight-bold">Plan de Tratamiento</span>
+                        </v-expansion-panel-title>
+                        <v-expansion-panel-text>
+                          <div class="text-body-2" style="word-wrap: break-word; white-space: pre-wrap;">
+                            {{ consulta.planTratamiento }}
                           </div>
-                          <div class="text-body-1 pl-7">
+                        </v-expansion-panel-text>
+                      </v-expansion-panel>
+
+                      <v-expansion-panel v-if="consulta.observaciones">
+                        <v-expansion-panel-title>
+                          <v-icon color="warning" size="small" class="mr-2">mdi-note-text</v-icon>
+                          <span class="text-caption font-weight-bold">Observaciones</span>
+                        </v-expansion-panel-title>
+                        <v-expansion-panel-text>
+                          <v-alert variant="tonal" color="warning" density="compact">
+                            <div class="text-body-2" style="word-wrap: break-word; white-space: pre-wrap;">
+                              {{ consulta.observaciones }}
+                            </div>
+                          </v-alert>
+                        </v-expansion-panel-text>
+                      </v-expansion-panel>
+                    </v-expansion-panels>
+
+                    <v-row dense class="mt-2">
+                      <v-col cols="12" v-if="consulta.diagnosticos && consulta.diagnosticos.length > 0">
+                        <div class="mb-2">
+                          <div class="d-flex align-center mb-1">
+                            <v-icon color="error" size="x-small" class="mr-1">mdi-medical-bag</v-icon>
+                            <span class="text-caption font-weight-bold">Diagnósticos</span>
+                          </div>
+                          <div class="d-flex flex-wrap gap-1">
                             <v-chip
                               v-for="diag in consulta.diagnosticos"
                               :key="diag.id"
-                              class="ma-1"
+                              size="x-small"
                               color="error"
                               variant="outlined"
                             >
@@ -165,83 +195,55 @@
                         </div>
                       </v-col>
 
-                      <v-col cols="12" v-if="consulta.planTratamiento">
-                        <div class="mb-3">
-                          <div class="d-flex align-center mb-2">
-                            <v-icon color="success" size="small" class="mr-2">mdi-pill</v-icon>
-                            <span class="text-subtitle-2 font-weight-bold">Plan de Tratamiento</span>
-                          </div>
-                          <div class="text-body-1 pl-7">
-                            {{ consulta.planTratamiento }}
-                          </div>
-                        </div>
-                      </v-col>
-
                       <v-col cols="12" v-if="consulta.tratamientos && consulta.tratamientos.length > 0">
-                        <div class="mb-3">
-                          <div class="d-flex align-center mb-2">
-                            <v-icon color="success" size="small" class="mr-2">mdi-medical-bag</v-icon>
-                            <span class="text-subtitle-2 font-weight-bold">Tratamientos Prescritos</span>
+                        <div class="mb-2">
+                          <div class="d-flex align-center mb-1">
+                            <v-icon color="success" size="x-small" class="mr-1">mdi-medical-bag</v-icon>
+                            <span class="text-caption font-weight-bold">Tratamientos Prescritos</span>
                           </div>
-                          <div class="text-body-1 pl-7">
+                          <div class="d-flex flex-wrap gap-1">
                             <v-chip
                               v-for="trat in consulta.tratamientos"
                               :key="trat.id"
-                              class="ma-1"
+                              size="x-small"
                               color="success"
                               variant="outlined"
                             >
-                              {{ trat.descripcion }}
+                              {{ trat.descripcion || trat.nombre }}
                             </v-chip>
                           </div>
                         </div>
                       </v-col>
 
                       <v-col cols="12" v-if="consulta.pronostico">
-                        <div class="mb-3">
-                          <div class="d-flex align-center mb-2">
-                            <v-icon color="purple" size="small" class="mr-2">mdi-trending-up</v-icon>
-                            <span class="text-subtitle-2 font-weight-bold">Pronóstico</span>
-                          </div>
-                          <div class="text-body-1 pl-7">
-                            <v-chip color="purple" variant="outlined">
-                              {{ consulta.pronostico }}
-                            </v-chip>
-                          </div>
-                        </div>
-                      </v-col>
-
-                      <v-col cols="12" v-if="consulta.observaciones">
                         <div class="mb-2">
-                          <div class="d-flex align-center mb-2">
-                            <v-icon color="warning" size="small" class="mr-2">mdi-note-text</v-icon>
-                            <span class="text-subtitle-2 font-weight-bold">Observaciones</span>
+                          <div class="d-flex align-center mb-1">
+                            <v-icon color="purple" size="x-small" class="mr-1">mdi-trending-up</v-icon>
+                            <span class="text-caption font-weight-bold">Pronóstico</span>
                           </div>
-                          <v-alert variant="tonal" color="warning" density="compact" class="pl-7">
-                            {{ consulta.observaciones }}
-                          </v-alert>
+                          <v-chip size="small" color="purple" variant="outlined">
+                            {{ consulta.pronostico }}
+                          </v-chip>
                         </div>
                       </v-col>
 
                       <v-col cols="12" v-if="consulta.requiereSeguimiento">
-                        <div class="mb-2">
-                          <v-alert variant="tonal" color="info" density="compact">
-                            <v-icon size="small" class="mr-2">mdi-calendar-clock</v-icon>
-                            Requiere seguimiento
-                            <span v-if="consulta.fechaSeguimiento"> el {{ formatDate(consulta.fechaSeguimiento) }}</span>
-                          </v-alert>
-                        </div>
+                        <v-alert variant="tonal" color="info" density="compact" class="mt-2">
+                          <v-icon size="x-small" class="mr-2">mdi-calendar-clock</v-icon>
+                          <span class="text-caption">Requiere seguimiento</span>
+                          <span v-if="consulta.fechaSeguimiento" class="text-caption"> el {{ formatDate(consulta.fechaSeguimiento) }}</span>
+                        </v-alert>
                       </v-col>
                     </v-row>
-                  </v-card-text>
 
-                  <v-card-actions class="bg-grey-lighten-5">
-                    <v-spacer></v-spacer>
-                    <v-chip size="small" variant="outlined">
-                      <v-icon size="small" class="mr-1">mdi-calendar</v-icon>
-                      ID: {{ consulta.id }}
-                    </v-chip>
-                  </v-card-actions>
+                    <v-divider class="my-2"></v-divider>
+                    <div class="d-flex justify-end">
+                      <v-chip size="x-small" variant="outlined">
+                        <v-icon size="x-small" class="mr-1">mdi-calendar</v-icon>
+                        ID: {{ consulta.id }}
+                      </v-chip>
+                    </div>
+                  </v-card-text>
                 </v-card>
               </v-timeline-item>
             </v-timeline>
@@ -395,10 +397,12 @@ import { ref, reactive, onMounted, computed } from 'vue'
 import { useHistorialesStore } from '@/stores/historialesStore'
 import { usePacientesStore } from '@/stores/pacientesStore'
 import { useReferenceData } from '@/composables/useReferenceData'
+import { useNotification } from '@/composables/useNotification'
 
 const historialesStore = useHistorialesStore()
 const pacientesStore = usePacientesStore()
 const { fetchPacientes, fetchUsuarios } = useReferenceData()
+const { showSuccess, showError } = useNotification()
 
 const selectedPacienteId = ref(null)
 const pacientes = ref([])
@@ -424,56 +428,79 @@ const consultaForm = reactive({
 
 const loadHistorial = async () => {
   if (!selectedPacienteId.value) return
+  
   try {
-    // Cargar el historial
-    await historialesStore.fetchHistorialByPaciente(selectedPacienteId.value)
-
-    // Cargar los datos completos del paciente
-    if (selectedPacienteId.value) {
-      pacienteActual.value = await pacientesStore.fetchPacienteById(selectedPacienteId.value)
-    }
-
-    // Cargar las consultas del historial
-    if (currentHistorial.value) {
-      await historialesStore.fetchConsultasByHistorial(currentHistorial.value.id)
+    // Cargar los datos completos del paciente primero
+    pacienteActual.value = await pacientesStore.fetchPacienteById(selectedPacienteId.value)
+    
+    // Intentar cargar el historial
+    try {
+      await historialesStore.fetchHistorialByPaciente(selectedPacienteId.value)
+      
+      // Si existe, cargar las consultas
+      if (currentHistorial.value?.id) {
+        await historialesStore.fetchConsultasByHistorial(currentHistorial.value.id)
+      }
+    } catch (error) {
+      // Si no existe historial (404), crearlo automáticamente
+      if (error.response?.status === 404) {
+        try {
+          const nuevoHistorial = await historialesStore.createHistorial(selectedPacienteId.value)
+          if (nuevoHistorial?.id) {
+            // Inicializar consultas vacías para el nuevo historial
+            consultas.value = []
+            showSuccess('Historial clínico creado exitosamente')
+          }
+        } catch (createError) {
+          console.error('Error creating historial:', createError)
+          const mensaje = createError.response?.data?.userMessage || 
+                         createError.response?.data?.message || 
+                         'Error al crear el historial clínico'
+          showError(mensaje)
+        }
+      } else {
+        // Otro tipo de error
+        console.error('Error loading historial:', error)
+        const mensaje = error.response?.data?.userMessage || 
+                       error.response?.data?.message || 
+                       'Error al cargar el historial clínico'
+        showError(mensaje)
+      }
     }
   } catch (error) {
-    // Si no existe historial (404), intentar crearlo
-    if (error.response?.status === 404) {
-      console.log('Historial no existe, creando uno nuevo...')
-      try {
-        const nuevoHistorial = await historialesStore.createHistorial(selectedPacienteId.value)
-        if (nuevoHistorial) {
-          consultas.value = []
-        }
-        // Cargar los datos del paciente de todas formas
-        if (selectedPacienteId.value) {
-          pacienteActual.value = await pacientesStore.fetchPacienteById(selectedPacienteId.value)
-        }
-      } catch (createError) {
-        console.error('Error creating historial:', createError)
-      }
-    } else {
-      console.error('Error loading historial:', error)
-    }
+    console.error('Error loading paciente:', error)
+    showError('Error al cargar la información del paciente')
   }
 }
 
 const saveConsulta = async () => {
-  if (!currentHistorial.value) return
-  if (!consultaForm.veterinarioId) {
-    console.error('Debe seleccionar un veterinario')
+  if (!currentHistorial.value) {
+    showError('No hay historial clínico disponible')
     return
   }
+  if (!consultaForm.veterinarioId) {
+    showError('Debe seleccionar un veterinario')
+    return
+  }
+  if (!consultaForm.motivo || consultaForm.motivo.trim() === '') {
+    showError('El motivo de consulta es requerido')
+    return
+  }
+  
   try {
     await historialesStore.createConsulta(
       currentHistorial.value.id,
       consultaForm,
       consultaForm.veterinarioId
     )
+    showSuccess('Consulta guardada exitosamente')
     cerrarDialogoConsulta()
   } catch (error) {
     console.error('Error saving consulta:', error)
+    const mensaje = error.response?.data?.userMessage || 
+                   error.response?.data?.message || 
+                   'Error al guardar la consulta'
+    showError(mensaje)
   }
 }
 
@@ -523,6 +550,12 @@ const calcularEdad = (fechaNacimiento) => {
     const dias = Math.floor((hoy - nacimiento) / (1000 * 60 * 60 * 24))
     return dias === 1 ? '1 día' : `${dias} días`
   }
+}
+
+const truncateText = (text, maxLength) => {
+  if (!text) return ''
+  if (text.length <= maxLength) return text
+  return text.substring(0, maxLength) + '...'
 }
 
 onMounted(async () => {

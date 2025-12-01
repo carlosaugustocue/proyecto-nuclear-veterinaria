@@ -21,6 +21,7 @@ import lombok.NoArgsConstructor;
 public class CreateDetalleFacturaRequest {
 
     private Long tipoServicioId; // Opcional, para servicios
+    private Long productoId; // Opcional, para productos del inventario
 
     @NotBlank(message = "La descripción es obligatoria")
     @Size(max = 300, message = "La descripción no puede exceder 300 caracteres")

@@ -25,6 +25,8 @@ public interface DetalleFacturaMapper {
     @Mapping(source = "factura.id", target = "facturaId")
     @Mapping(source = "tipoServicio.id", target = "tipoServicioId")
     @Mapping(source = "tipoServicio.nombre", target = "tipoServicioNombre")
+    @Mapping(source = "producto.id", target = "productoId")
+    @Mapping(source = "producto.nombre", target = "productoNombre")
     DetalleFacturaDTO toDTO(DetalleFactura detalle);
 
     /**
@@ -42,6 +44,7 @@ public interface DetalleFacturaMapper {
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "factura", ignore = true)
     @Mapping(target = "tipoServicio", ignore = true)
+    @Mapping(target = "producto", ignore = true) // Se establece manualmente en el servicio
     @Mapping(target = "subtotal", ignore = true) // Se calcula en el servicio
     @Mapping(target = "descuentoMonto", constant = "0.0")
     @Mapping(target = "total", ignore = true) // Se calcula en el servicio

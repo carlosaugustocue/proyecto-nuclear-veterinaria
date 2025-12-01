@@ -16,9 +16,18 @@ export const useFacturasStore = defineStore('facturas', () => {
     return {
       ...dto,
       clienteObj: dto.cliente,
-      clienteNombre: dto.cliente?.nombreCompleto || dto.cliente?.nombre || '',
-      estadoNombre: dto.estado?.nombre || dto.estado || '',
+      clienteNombre: dto.clienteNombre || dto.cliente?.nombreCompleto || dto.cliente?.nombre || '',
+      estadoNombre: dto.estado || dto.estadoNombre || '',
       metodoPagoNombre: dto.metodoPago?.nombre || dto.metodoPago || '',
+      // Asegurar que detalles y pagos estén disponibles
+      detalles: dto.detalles || [],
+      pagos: dto.pagos || [],
+      // Mapear campos de fecha
+      fechaEmision: dto.fechaEmision || dto.fecha,
+      fecha: dto.fechaEmision || dto.fecha,
+      // Mapear número de factura
+      numeroFactura: dto.numeroFactura || dto.numero,
+      numero: dto.numeroFactura || dto.numero,
     }
   }
 
@@ -163,6 +172,163 @@ export const useFacturasStore = defineStore('facturas', () => {
     }
   }
 
+  // Buscar factura por citaId
+  const fetchFacturaByCitaId = async (citaId) => {
+    if (!citaId) return null
+    
+    error.value = null
+    try {
+      // Buscar en la lista de facturas cargadas primero (sin marcar loading para no bloquear UI)
+      const facturaExistente = facturas.value.find(f => f.citaId === citaId)
+      if (facturaExistente) {
+        return facturaExistente
+      }
+      
+      // Si no está en la lista, buscar en el backend
+      // Buscar en todas las facturas del cliente o directamente en todas
+      const response = await get('/v1/facturas')
+      const rawData = response.data || []
+      const facturasMapeadas = rawData.map(mapFacturaDTO)
+      
+      // Actualizar el store con todas las facturas
+      facturas.value = facturasMapeadas
+      
+      // Buscar la factura por citaId
+      const factura = facturasMapeadas.find(f => {
+        // Comparar tanto por número como por string
+        const facturaCitaId = f.citaId
+        return facturaCitaId !== null && 
+               facturaCitaId !== undefined && 
+               (facturaCitaId === citaId || facturaCitaId.toString() === citaId.toString())
+      })
+      
+      return factura || null
+    } catch (err) {
+      // No establecer error para que no se muestre al usuario
+      // Solo loggear para debugging
+      console.error('Error fetching factura by citaId:', err)
+      return null
+    }
+  }
+
+  // Crear factura desde una cita
+  const createFacturaFromCita = async (citaId, clienteId, usuarioEmisorId, detalles = []) => {
+    loading.value = true
+    error.value = null
+    try {
+      const facturaData = {
+        clienteId: clienteId,
+        citaId: citaId,
+        usuarioEmisorId: usuarioEmisorId,
+        fechaEmision: new Date().toISOString().split('T')[0],
+        detalles: detalles
+      }
+      
+      const response = await post('/v1/facturas', facturaData)
+      const mappedFactura = mapFacturaDTO(response.data)
+      facturas.value.push(mappedFactura)
+      return mappedFactura
+    } catch (err) {
+      error.value = err.message || 'Error al crear factura desde cita'
+      console.error('Error creating factura from cita:', err)
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
+  // Agregar detalle a factura existente
+  const agregarDetalle = async (facturaId, detalleData) => {
+    // No usar loading general para no bloquear la UI
+    error.value = null
+    try {
+      const response = await post(`/v1/facturas/${facturaId}/detalles`, detalleData)
+      // Recargar la factura para obtener los detalles actualizados
+      // No usar loading aquí para no bloquear
+      try {
+        const facturaResponse = await get(`/v1/facturas/${facturaId}`)
+        currentFactura.value = mapFacturaDTO(facturaResponse.data)
+        // Actualizar también en la lista si existe
+        const index = facturas.value.findIndex(f => f.id === facturaId)
+        if (index > -1) {
+          facturas.value[index] = currentFactura.value
+        }
+      } catch (reloadError) {
+        console.error('Error al recargar factura después de agregar detalle:', reloadError)
+      }
+      return response.data
+    } catch (err) {
+      const errorMessage = err.response?.data?.userMessage || 
+                          err.response?.data?.message || 
+                          err.message || 
+                          'Error al agregar detalle a la factura'
+      error.value = errorMessage
+      console.error('Error adding detalle to factura:', err)
+      throw { ...err, userMessage: errorMessage }
+    }
+  }
+
+  // Eliminar detalle de factura
+  const eliminarDetalle = async (facturaId, detalleId) => {
+    // No usar loading general para no bloquear la UI
+    error.value = null
+    try {
+      await deleteRequest(`/v1/facturas/${facturaId}/detalles/${detalleId}`)
+      // Recargar la factura para obtener los detalles actualizados
+      // No usar loading aquí para no bloquear
+      try {
+        const facturaResponse = await get(`/v1/facturas/${facturaId}`)
+        currentFactura.value = mapFacturaDTO(facturaResponse.data)
+        // Actualizar también en la lista si existe
+        const index = facturas.value.findIndex(f => f.id === facturaId)
+        if (index > -1) {
+          facturas.value[index] = currentFactura.value
+        }
+      } catch (reloadError) {
+        console.error('Error al recargar factura después de eliminar detalle:', reloadError)
+      }
+      return true
+    } catch (err) {
+      const errorMessage = err.response?.data?.userMessage || 
+                          err.response?.data?.message || 
+                          err.message || 
+                          'Error al eliminar detalle de la factura'
+      error.value = errorMessage
+      console.error('Error deleting detalle from factura:', err)
+      throw { ...err, userMessage: errorMessage }
+    }
+  }
+
+  // Registrar pago a factura
+  const registrarPago = async (facturaId, pagoData) => {
+    // No usar loading general para no bloquear la UI
+    error.value = null
+    try {
+      const response = await post(`/v1/facturas/${facturaId}/pagos`, pagoData)
+      // Recargar la factura para obtener los datos actualizados
+      try {
+        const facturaResponse = await get(`/v1/facturas/${facturaId}`)
+        currentFactura.value = mapFacturaDTO(facturaResponse.data)
+        // Actualizar también en la lista si existe
+        const index = facturas.value.findIndex(f => f.id === facturaId)
+        if (index > -1) {
+          facturas.value[index] = currentFactura.value
+        }
+      } catch (reloadError) {
+        console.error('Error al recargar factura después de registrar pago:', reloadError)
+      }
+      return response.data
+    } catch (err) {
+      const errorMessage = err.response?.data?.userMessage || 
+                          err.response?.data?.message || 
+                          err.message || 
+                          'Error al registrar el pago'
+      error.value = errorMessage
+      console.error('Error registering pago:', err)
+      throw { ...err, userMessage: errorMessage }
+    }
+  }
+
   return {
     facturas,
     currentFactura,
@@ -173,9 +339,14 @@ export const useFacturasStore = defineStore('facturas', () => {
     facturasPendientes,
     fetchFacturas,
     fetchFacturaById,
+    fetchFacturaByCitaId,
     createFactura,
+    createFacturaFromCita,
     updateFactura,
     deleteFactura,
+    agregarDetalle,
+    eliminarDetalle,
+    registrarPago,
     marcarComoPagada,
     anularFactura,
   }
