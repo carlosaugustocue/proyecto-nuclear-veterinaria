@@ -673,23 +673,23 @@ onMounted(async () => {
 }
 
 .stat-card-primary {
-  border-left-color: rgb(25, 118, 210);
+  border-left-color: #0A74B7; /* Azul Institucional */
 }
 
 .stat-card-success {
-  border-left-color: rgb(76, 175, 80);
+  border-left-color: #0C5A96; /* Azul Medio */
 }
 
 .stat-card-warning {
-  border-left-color: rgb(255, 152, 0);
+  border-left-color: #F57C4F; /* Naranja - Acción Destacada */
 }
 
 .stat-card-info {
-  border-left-color: rgb(33, 150, 243);
+  border-left-color: #1C78BF; /* Azul Claro */
 }
 
 .border-primary {
-  border: 2px solid rgb(25, 118, 210) !important;
+  border: 2px solid #0A74B7 !important; /* Azul Institucional */
 }
 
 .cursor-pointer {

@@ -1164,7 +1164,7 @@ const generarHTMLFactura = (factura) => {
         .info { margin-bottom: 20px; }
         table { width: 100%; border-collapse: collapse; margin: 20px 0; }
         th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-        th { background-color: #f2f2f2; font-weight: bold; }
+        th { background-color: #E0E3E6; font-weight: bold; } /* Gris Medio */
         .total { text-align: right; font-weight: bold; margin-top: 20px; }
         .footer { margin-top: 40px; text-align: center; font-size: 12px; color: #666; }
       </style>
@@ -1236,7 +1236,7 @@ const deleteFactura = async () => {
     return
   }
 
-  try {
+    try {
     await facturasStore.deleteFactura(factura.value.id)
     showSuccess('Factura eliminada exitosamente')
       router.push('/facturas')

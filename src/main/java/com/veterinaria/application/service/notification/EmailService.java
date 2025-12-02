@@ -385,7 +385,7 @@ public class EmailService {
                         
                         <div class="info-box">
                             <div style="margin-bottom: 15px;">
-                                <strong>Número de Factura:</strong> %s<br>
+                            <strong>Número de Factura:</strong> %s<br>
                                 <strong>Fecha de Emisión:</strong> %s<br>
                             </div>
                             
@@ -423,7 +423,7 @@ public class EmailService {
                 nombreCliente, 
                 numeroFactura,
                 fechaEmision != null ? fechaEmision.format(DateTimeFormatter.ofPattern("dd/MM/yyyy")) : 
-                    LocalDate.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")),
+                LocalDate.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")),
                 detalles,
                 subtotal != null ? subtotal : 0.0,
                 totalDescuentos != null && totalDescuentos > 0 ? 

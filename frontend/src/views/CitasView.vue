@@ -93,6 +93,13 @@
                 class="elevation-1"
                 :items-per-page="15"
               >
+                <!-- ID -->
+                <template v-slot:item.id="{ item }">
+                  <v-chip size="small" color="primary" variant="outlined" class="font-weight-bold">
+                    #{{ item.id }}
+                  </v-chip>
+                </template>
+
                 <!-- Fecha y Hora -->
                 <template v-slot:item.fecha="{ item }">
                   <div>
@@ -275,7 +282,7 @@
                         class="mb-1 d-block text-truncate"
                         style="max-width: 100%;"
                       >
-                        {{ cita.hora }} - {{ cita.pacienteNombre }}
+                        #{{ cita.id }} - {{ cita.hora }} - {{ cita.pacienteNombre }}
                       </v-chip>
                       <div v-if="dia.citas.length > 2" class="text-caption text-grey">
                         +{{ dia.citas.length - 2 }} más
@@ -309,7 +316,12 @@
                 </template>
                 <v-card :color="getEstadoColor(obtenerEstado(cita))" variant="outlined">
                   <v-card-title class="d-flex justify-space-between align-center">
-                    <span>{{ cita.pacienteNombre }}</span>
+                    <div class="d-flex align-center gap-2">
+                      <v-chip size="small" color="primary" variant="outlined" class="font-weight-bold">
+                        #{{ cita.id }}
+                      </v-chip>
+                      <span>{{ cita.pacienteNombre }}</span>
+                    </div>
                     <v-chip :color="getEstadoColor(obtenerEstado(cita))" size="small" text-color="white">
                       {{ formatearEstado(obtenerEstado(cita)) }}
                     </v-chip>
@@ -450,6 +462,7 @@ const facturacionOptions = [
 ]
 
 const headers = [
+  { title: 'ID', value: 'id', width: '80' },
   { title: 'Paciente', value: 'pacienteNombre' },
   { title: 'Cliente', value: 'clienteNombre' },
   { title: 'Fecha', value: 'fecha', width: '140' },
@@ -864,4 +877,7 @@ onMounted(() => {
 </script>
 
 <style scoped>
+.gap-2 {
+  gap: 8px;
+}
 </style>

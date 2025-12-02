@@ -125,7 +125,7 @@
                     <v-expansion-panels variant="accordion" class="mt-2">
                       <v-expansion-panel v-if="consulta.anamnesis">
                         <v-expansion-panel-title>
-                          <v-icon color="info" size="small" class="mr-2">mdi-clipboard-text</v-icon>
+                            <v-icon color="info" size="small" class="mr-2">mdi-clipboard-text</v-icon>
                           <span class="text-caption font-weight-bold">Anamnesis</span>
                         </v-expansion-panel-title>
                         <v-expansion-panel-text>
@@ -137,7 +137,7 @@
 
                       <v-expansion-panel v-if="consulta.examenFisico">
                         <v-expansion-panel-title>
-                          <v-icon color="primary" size="small" class="mr-2">mdi-stethoscope</v-icon>
+                            <v-icon color="primary" size="small" class="mr-2">mdi-stethoscope</v-icon>
                           <span class="text-caption font-weight-bold">Examen Físico</span>
                         </v-expansion-panel-title>
                         <v-expansion-panel-text>
@@ -168,7 +168,7 @@
                           <v-alert variant="tonal" color="warning" density="compact">
                             <div class="text-body-2" style="word-wrap: break-word; white-space: pre-wrap;">
                               {{ consulta.observaciones }}
-                            </div>
+                        </div>
                           </v-alert>
                         </v-expansion-panel-text>
                       </v-expansion-panel>
@@ -232,7 +232,7 @@
                           <v-icon size="x-small" class="mr-2">mdi-calendar-clock</v-icon>
                           <span class="text-caption">Requiere seguimiento</span>
                           <span v-if="consulta.fechaSeguimiento" class="text-caption"> el {{ formatDate(consulta.fechaSeguimiento) }}</span>
-                        </v-alert>
+                          </v-alert>
                       </v-col>
                     </v-row>
 
@@ -435,32 +435,32 @@ const loadHistorial = async () => {
     
     // Intentar cargar el historial
     try {
-      await historialesStore.fetchHistorialByPaciente(selectedPacienteId.value)
-      
+    await historialesStore.fetchHistorialByPaciente(selectedPacienteId.value)
+
       // Si existe, cargar las consultas
       if (currentHistorial.value?.id) {
-        await historialesStore.fetchConsultasByHistorial(currentHistorial.value.id)
-      }
-    } catch (error) {
+      await historialesStore.fetchConsultasByHistorial(currentHistorial.value.id)
+    }
+  } catch (error) {
       // Si no existe historial (404), crearlo automáticamente
-      if (error.response?.status === 404) {
-        try {
-          const nuevoHistorial = await historialesStore.createHistorial(selectedPacienteId.value)
+    if (error.response?.status === 404) {
+      try {
+        const nuevoHistorial = await historialesStore.createHistorial(selectedPacienteId.value)
           if (nuevoHistorial?.id) {
             // Inicializar consultas vacías para el nuevo historial
-            consultas.value = []
+          consultas.value = []
             showSuccess('Historial clínico creado exitosamente')
-          }
-        } catch (createError) {
-          console.error('Error creating historial:', createError)
+        }
+      } catch (createError) {
+        console.error('Error creating historial:', createError)
           const mensaje = createError.response?.data?.userMessage || 
                          createError.response?.data?.message || 
                          'Error al crear el historial clínico'
           showError(mensaje)
-        }
-      } else {
+      }
+    } else {
         // Otro tipo de error
-        console.error('Error loading historial:', error)
+      console.error('Error loading historial:', error)
         const mensaje = error.response?.data?.userMessage || 
                        error.response?.data?.message || 
                        'Error al cargar el historial clínico'

@@ -235,13 +235,23 @@
                   size="small"
                 >
                   <template v-slot:opposite>
-                    <div class="text-subtitle-2 text-grey">{{ formatDate(item.fechaConsulta || item.fecha) }}</div>
+                    <div class="d-flex flex-column align-end">
+                      <v-chip size="small" color="primary" variant="outlined" class="mb-1 font-weight-bold">
+                        #{{ item.id }}
+                      </v-chip>
+                      <div class="text-subtitle-2 font-weight-medium">{{ formatDate(item.fechaConsulta || item.fecha) }}</div>
+                    </div>
                   </template>
                   <v-card class="mb-3" style="max-width: 100%;">
                     <v-card-title class="bg-grey-lighten-4 d-flex justify-space-between align-center py-2">
-                      <span class="text-subtitle-2 text-truncate" style="max-width: 70%;">
-                        {{ truncateText(item.motivo || item.motivoConsulta, 60) }}
-                      </span>
+                      <div class="d-flex align-center gap-2" style="max-width: 70%;">
+                        <v-chip size="x-small" color="primary" variant="outlined" class="font-weight-bold">
+                          #{{ item.id }}
+                        </v-chip>
+                        <span class="text-subtitle-2 text-truncate">
+                          {{ truncateText(item.motivo || item.motivoConsulta, 50) }}
+                        </span>
+                      </div>
                       <v-btn
                         v-if="!item.estaFinalizada"
                         icon="mdi-pencil"
@@ -252,6 +262,10 @@
                       ></v-btn>
                     </v-card-title>
                     <v-card-text class="pa-3" style="max-height: 400px; overflow-y: auto;">
+                      <div class="text-caption text-grey mb-2 d-flex align-center">
+                        <v-icon size="x-small" class="mr-1">mdi-calendar</v-icon>
+                        <span><strong>Fecha:</strong> {{ formatDate(item.fechaConsulta || item.fecha) }}</span>
+                      </div>
                       <v-row dense>
                         <v-col cols="12" md="6" v-if="item.signosVitales?.pesoKg">
                           <div class="text-caption">
@@ -878,6 +892,9 @@ const guardarConsultaEditar = async () => {
     if (consultaEditar.peso) signosVitales.pesoKg = parseFloat(consultaEditar.peso)
     if (consultaEditar.temperatura) signosVitales.temperatura = parseFloat(consultaEditar.temperatura)
     if (consultaEditar.frecuenciaCardiaca) signosVitales.frecuenciaCardiaca = parseInt(consultaEditar.frecuenciaCardiaca)
+
+    // Obtener put de useApi
+    const { put } = useApi()
 
     // Actualizar consulta existente
     const consultaData = {

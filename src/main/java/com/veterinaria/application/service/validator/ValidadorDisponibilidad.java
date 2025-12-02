@@ -95,7 +95,7 @@ public class ValidadorDisponibilidad {
                             c.getId(), c.getFecha(), c.getHora(), c.getDuracionEstimada())).toList());
             return false;
         }
-        
+
         log.info("✓ Sin conflictos de horario");
 
         log.info("Disponibilidad confirmada para veterinario {} en {} a las {}", 

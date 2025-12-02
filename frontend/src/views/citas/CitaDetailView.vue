@@ -3,14 +3,14 @@
     <!-- Botón volver -->
     <v-row class="mb-4">
       <v-col cols="12">
-        <v-btn
-          @click="$router.back()"
+            <v-btn
+              @click="$router.back()"
           variant="text"
           prepend-icon="mdi-arrow-left"
           class="mb-2"
-        >
+            >
           Volver
-        </v-btn>
+            </v-btn>
       </v-col>
     </v-row>
 
@@ -45,7 +45,7 @@
                 <v-icon start size="small">{{ getEstadoIcon(obtenerEstado(cita)) }}</v-icon>
                 {{ formatearEstado(obtenerEstado(cita)) }}
               </v-chip>
-            </v-card-title>
+          </v-card-title>
           </v-card>
         </v-col>
       </v-row>
@@ -60,8 +60,8 @@
               <span class="font-weight-bold">Información del Paciente</span>
             </v-card-title>
             <v-card-text class="pa-4">
-              <v-row>
-                <v-col cols="12" md="6">
+            <v-row>
+              <v-col cols="12" md="6">
                   <div class="d-flex align-center mb-4">
                     <v-avatar color="blue" size="64" class="mr-4">
                       <v-icon color="white" size="32">mdi-paw</v-icon>
@@ -73,9 +73,9 @@
                           {{ cita.pacienteEspecie || 'Especie no especificada' }}
                         </v-chip>
                       </div>
-                    </div>
-                  </div>
-                </v-col>
+                </div>
+                </div>
+              </v-col>
                 <v-col cols="12" md="6" class="d-flex align-center">
                   <v-btn
                     :to="`/pacientes/${cita.pacienteId}`"
@@ -98,7 +98,7 @@
             </v-card-title>
             <v-card-text class="pa-4">
               <v-row>
-                <v-col cols="12" md="6">
+              <v-col cols="12" md="6">
                   <div class="mb-3">
                     <div class="text-overline text-grey mb-1">Nombre</div>
                     <div class="text-h6">{{ cita.clienteNombre || 'No especificado' }}</div>
@@ -119,9 +119,9 @@
                       <a :href="`tel:${cita.clienteTelefono}`" class="text-decoration-none">
                         {{ cita.clienteTelefono }}
                       </a>
-                    </div>
-                  </div>
-                </v-col>
+                </div>
+                </div>
+              </v-col>
                 <v-col cols="12" md="6" class="d-flex align-center">
                   <v-btn
                     :to="`/clientes/${cita.clienteId}`"
@@ -132,7 +132,7 @@
                     Ver Perfil del Cliente
                   </v-btn>
                 </v-col>
-              </v-row>
+            </v-row>
             </v-card-text>
           </v-card>
 
@@ -143,8 +143,8 @@
               <span class="font-weight-bold">Detalles de la Cita</span>
             </v-card-title>
             <v-card-text class="pa-4">
-              <v-row>
-                <v-col cols="12" md="6">
+            <v-row>
+              <v-col cols="12" md="6">
                   <div class="mb-4">
                     <div class="text-overline text-grey mb-2">Fecha y Hora</div>
                     <div class="d-flex align-center">
@@ -168,10 +168,10 @@
                       <v-icon color="info" class="mr-2">mdi-timer</v-icon>
                       <span class="text-body-1">{{ cita.duracionEstimada }} minutos</span>
                     </div>
-                  </div>
-                </v-col>
+                </div>
+              </v-col>
 
-                <v-col cols="12" md="6">
+              <v-col cols="12" md="6">
                   <div class="mb-4" v-if="cita.tipoServicioNombre">
                     <div class="text-overline text-grey mb-2">Tipo de Servicio</div>
                     <div class="d-flex align-center">
@@ -186,11 +186,11 @@
                         </div>
                       </div>
                     </div>
-                  </div>
-                </v-col>
-              </v-row>
+                </div>
+              </v-col>
+            </v-row>
 
-              <v-divider class="my-4"></v-divider>
+            <v-divider class="my-4"></v-divider>
 
               <div class="mb-3" v-if="cita.motivo">
                 <div class="text-overline text-grey mb-2">Motivo de la Cita</div>
@@ -274,7 +274,7 @@
               <div v-if="loadingFactura" class="text-center py-4">
                 <v-progress-circular indeterminate color="amber" size="32"></v-progress-circular>
                 <div class="text-caption text-grey mt-2">Buscando factura...</div>
-              </div>
+                </div>
               
               <div v-else-if="facturaAsociada">
                 <v-alert type="success" variant="tonal" class="mb-4">
@@ -357,7 +357,7 @@
               </div>
             </v-card-text>
           </v-card>
-        </v-col>
+              </v-col>
 
         <!-- Columna derecha - Información secundaria y acciones -->
         <v-col cols="12" md="4">
@@ -567,8 +567,8 @@
                   <v-list-item-title>Eliminar Cita</v-list-item-title>
                 </v-list-item>
               </v-list>
-            </v-card-text>
-          </v-card>
+          </v-card-text>
+        </v-card>
 
           <!-- Información del Sistema -->
           <v-card class="elevation-2">

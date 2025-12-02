@@ -186,25 +186,25 @@
 
           <v-row>
             <v-col cols="6">
-              <v-text-field
-                v-model.number="nuevoDetalle.cantidad"
-                label="Cantidad *"
-                type="number"
+          <v-text-field
+            v-model.number="nuevoDetalle.cantidad"
+            label="Cantidad *"
+            type="number"
                 min="1"
                 :rules="[rules.required, rules.positive]"
                 prepend-icon="mdi-numeric"
-              ></v-text-field>
+          ></v-text-field>
             </v-col>
             <v-col cols="6">
-              <v-text-field
-                v-model.number="nuevoDetalle.precioUnitario"
-                label="Precio Unitario *"
-                type="number"
-                step="0.01"
+          <v-text-field
+            v-model.number="nuevoDetalle.precioUnitario"
+            label="Precio Unitario *"
+            type="number"
+            step="0.01"
                 min="0"
                 :rules="[rules.required, rules.positive]"
                 prepend-icon="mdi-currency-usd"
-              ></v-text-field>
+          ></v-text-field>
             </v-col>
           </v-row>
 
@@ -330,10 +330,10 @@ const onServicioSeleccionado = (servicioId) => {
 
 const cancelarDetalle = () => {
   nuevoDetalle.tipoServicioId = null
-  nuevoDetalle.descripcion = ''
-  nuevoDetalle.cantidad = 1
-  nuevoDetalle.precioUnitario = 0
-  dialogDetalle.value = false
+    nuevoDetalle.descripcion = ''
+    nuevoDetalle.cantidad = 1
+    nuevoDetalle.precioUnitario = 0
+    dialogDetalle.value = false
 }
 
 const confirmDetalle = () => {

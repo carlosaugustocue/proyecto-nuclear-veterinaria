@@ -167,16 +167,20 @@ public class SecurityConfig {
 
     /**
      * Configura CORS para permitir peticiones desde el frontend
+     * Nota: setAllowedOriginPatterns permite wildcards pero requiere setAllowCredentials(false)
+     * Para desarrollo con ngrok, usamos patrones sin credenciales (JWT no requiere cookies)
      */
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         
-        // Orígenes permitidos (ajustar según el entorno)
-        configuration.setAllowedOrigins(List.of(
-                "http://localhost:3000",  // React dev server
-                "http://localhost:4200",  // Angular dev server
-                "http://localhost:8080"   // Mismo origen
+        // Orígenes permitidos usando patrones (permite wildcards)
+        // Esto permite localhost en cualquier puerto y dominios de ngrok
+        configuration.setAllowedOriginPatterns(List.of(
+                "http://localhost:*",           // Localhost en cualquier puerto
+                "https://*.ngrok-free.app",     // Dominios de ngrok (free)
+                "https://*.ngrok.io",           // Dominios de ngrok (paid)
+                "https://*.ngrok.app"           // Dominios de ngrok (alternativo)
         ));
         
         // Métodos HTTP permitidos
@@ -185,8 +189,9 @@ public class SecurityConfig {
         // Headers permitidos
         configuration.setAllowedHeaders(List.of("*"));
         
-        // Permitir credenciales
-        configuration.setAllowCredentials(true);
+        // No permitir credenciales cuando usamos patrones con wildcards
+        // Esto es compatible con JWT ya que no usamos cookies
+        configuration.setAllowCredentials(false);
         
         // Headers expuestos
         configuration.setExposedHeaders(List.of("Authorization", "Content-Type"));

@@ -13,18 +13,26 @@ export default createVuetify({
       humboldt: {
         dark: false,
         colors: {
-          primary: '#083E6B',      // Azul institucional oscuro
-          secondary: '#0C5A96',    // Azul medio corporativo
-          accent: '#1C78BF',       // Azul claro (acciones suaves)
+          // Colores principales según paleta
+          primary: '#0A74B7',      // Azul Institucional
+          secondary: '#0C5A96',    // Azul Medio
+          accent: '#1C78BF',       // Azul Claro
           
-          background: '#F2F6FA',   // Fondo limpio y moderno
-          surface: '#FFFFFF',      // Formularios, cards
-
-          // Colores corporativos alternos (NO verdes ni amarillos)
-          success: '#0C5A96',      // Azul medio (feedback positivo)
-          info: '#1C78BF',         // Azul claro
-          warning: '#0C5A96',      // Aviso elegante sin estridencias
+          // Colores de fondo y superficie
+          background: '#F4F6F8',   // Gris Claro
+          surface: '#FFFFFF',      // Blanco
+          
+          // Colores de estado y feedback
+          success: '#0C5A96',      // Azul Medio (feedback positivo)
+          info: '#1C78BF',         // Azul Claro
+          warning: '#F57C4F',      // Naranja (Acción Destacada)
           error: '#B71C1C',        // Rojo oscuro profesional
+          
+          // Colores adicionales de la paleta
+          'primary-dark': '#083E6B',  // Azul Profundo (variante oscura)
+          'grey-light': '#F4F6F8',    // Gris Claro
+          'grey-medium': '#E0E3E6',   // Gris Medio
+          'action-highlight': '#F57C4F', // Naranja (Acción Destacada)
         },
       },
     },

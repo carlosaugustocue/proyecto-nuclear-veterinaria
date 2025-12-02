@@ -14,7 +14,8 @@
                   <v-text-field
                     v-model="nombre"
                     label="Nombre *"
-                    :rules="[rules.required]"
+                    :rules="[rules.required, rules.nombre]"
+                    variant="outlined"
                   ></v-text-field>
                 </v-col>
 
@@ -22,7 +23,8 @@
                   <v-text-field
                     v-model="apellido"
                     label="Apellido *"
-                    :rules="[rules.required]"
+                    :rules="[rules.required, rules.apellido]"
+                    variant="outlined"
                   ></v-text-field>
                 </v-col>
               </v-row>
@@ -32,7 +34,10 @@
                   <v-text-field
                     v-model="dni"
                     label="Documento de Identidad *"
-                    :rules="[rules.required]"
+                    :rules="[rules.required, rules.dni]"
+                    variant="outlined"
+                    hint="Entre 7 y 20 caracteres"
+                    persistent-hint
                   ></v-text-field>
                 </v-col>
 
@@ -42,6 +47,7 @@
                     label="Email *"
                     type="email"
                     :rules="[rules.required, rules.email]"
+                    variant="outlined"
                   ></v-text-field>
                 </v-col>
               </v-row>
@@ -51,7 +57,10 @@
                   <v-text-field
                     v-model="telefono"
                     label="Teléfono *"
-                    :rules="[rules.required]"
+                    :rules="[rules.required, rules.telefono]"
+                    variant="outlined"
+                    hint="Entre 7 y 15 dígitos (puede incluir + al inicio)"
+                    persistent-hint
                   ></v-text-field>
                 </v-col>
 
@@ -59,7 +68,8 @@
                   <v-text-field
                     v-model="direccion"
                     label="Dirección *"
-                    :rules="[rules.required]"
+                    :rules="[rules.required, rules.direccion]"
+                    variant="outlined"
                   ></v-text-field>
                 </v-col>
               </v-row>
@@ -69,6 +79,7 @@
                   <v-text-field
                     v-model="ciudad"
                     label="Ciudad"
+                    variant="outlined"
                   ></v-text-field>
                 </v-col>
 
@@ -76,6 +87,7 @@
                   <v-text-field
                     v-model="departamento"
                     label="Departamento"
+                    variant="outlined"
                   ></v-text-field>
                 </v-col>
               </v-row>
@@ -85,6 +97,7 @@
                   <v-text-field
                     v-model="codigoPostal"
                     label="Código Postal"
+                    variant="outlined"
                   ></v-text-field>
                 </v-col>
 
@@ -92,6 +105,7 @@
                   <v-text-field
                     v-model="observaciones"
                     label="Observaciones"
+                    variant="outlined"
                   ></v-text-field>
                 </v-col>
               </v-row>
@@ -135,6 +149,7 @@
                             v-model="mascota.nombre"
                             label="Nombre de la Mascota *"
                             :rules="[rules.required]"
+                            variant="outlined"
                           ></v-text-field>
                         </v-col>
                         <v-col cols="12" md="6">
@@ -145,6 +160,7 @@
                             item-title="title"
                             item-value="value"
                             :rules="[rules.required]"
+                            variant="outlined"
                           ></v-select>
                         </v-col>
                       </v-row>
@@ -157,6 +173,7 @@
                             item-title="nombre"
                             item-value="id"
                             clearable
+                            variant="outlined"
                           ></v-select>
                         </v-col>
                         <v-col cols="12" md="6">
@@ -165,6 +182,7 @@
                             label="Fecha de Nacimiento *"
                             type="date"
                             :rules="[rules.required]"
+                            variant="outlined"
                           ></v-text-field>
                         </v-col>
                       </v-row>
@@ -177,6 +195,7 @@
                             item-title="title"
                             item-value="value"
                             :rules="[rules.required]"
+                            variant="outlined"
                           ></v-select>
                         </v-col>
                         <v-col cols="12" md="6">
@@ -185,6 +204,7 @@
                             label="Peso (kg)"
                             type="number"
                             step="0.1"
+                            variant="outlined"
                           ></v-text-field>
                         </v-col>
                       </v-row>
@@ -193,12 +213,14 @@
                           <v-text-field
                             v-model="mascota.color"
                             label="Color"
+                            variant="outlined"
                           ></v-text-field>
                         </v-col>
                         <v-col cols="12" md="6">
                           <v-text-field
                             v-model="mascota.microchip"
                             label="Microchip"
+                            variant="outlined"
                           ></v-text-field>
                         </v-col>
                       </v-row>
@@ -263,6 +285,7 @@ const { showSuccess, showError } = useNotification()
 
 const loading = computed(() => clientesStore.loading || pacientesStore.loading)
 const isEditing = computed(() => !!route.params.id)
+const form = ref(null)
 
 const nombre = ref('')
 const apellido = ref('')
@@ -295,7 +318,36 @@ const sexoOptions = [
 
 const rules = {
   required: (v) => !!v || 'Este campo es requerido',
-  email: (v) => /.+@.+\..+/.test(v) || 'El email debe ser válido',
+  email: (v) => !v || /.+@.+\..+/.test(v) || 'El email debe ser válido',
+  dni: (v) => {
+    if (!v) return 'Este campo es requerido'
+    if (v.length < 7 || v.length > 20) return 'El DNI debe tener entre 7 y 20 caracteres'
+    return true
+  },
+  telefono: (v) => {
+    if (!v) return 'Este campo es requerido'
+    // Remover espacios, guiones y paréntesis para validar
+    const telefonoLimpio = v.replace(/[\s\-\(\)]/g, '')
+    if (!/^[+]?[0-9]{7,15}$/.test(telefonoLimpio)) {
+      return 'El teléfono debe tener entre 7 y 15 dígitos (puede incluir + al inicio)'
+    }
+    return true
+  },
+  nombre: (v) => {
+    if (!v) return 'Este campo es requerido'
+    if (v.length < 2 || v.length > 100) return 'El nombre debe tener entre 2 y 100 caracteres'
+    return true
+  },
+  apellido: (v) => {
+    if (!v) return 'Este campo es requerido'
+    if (v.length < 2 || v.length > 100) return 'El apellido debe tener entre 2 y 100 caracteres'
+    return true
+  },
+  direccion: (v) => {
+    if (!v) return 'Este campo es requerido'
+    if (v.length > 300) return 'La dirección no puede exceder 300 caracteres'
+    return true
+  },
 }
 
 const agregarMascota = () => {
@@ -321,18 +373,28 @@ const getRazasPorEspecie = (especie) => {
 }
 
 const saveCliente = async () => {
+  // Validar formulario antes de enviar
+  const { valid } = await form.value.validate()
+  if (!valid) {
+    showError('Por favor completa todos los campos requeridos correctamente')
+    return
+  }
+
   try {
+    // Limpiar el teléfono (remover espacios, guiones, paréntesis)
+    const telefonoLimpio = telefono.value.replace(/[\s\-\(\)]/g, '')
+    
     const formData = {
-      nombre: nombre.value,
-      apellido: apellido.value,
-      dni: dni.value,
-      email: email.value,
-      telefono: telefono.value,
-      direccion: direccion.value,
-      ciudad: ciudad.value || null,
-      departamento: departamento.value || null,
-      codigoPostal: codigoPostal.value || null,
-      observaciones: observaciones.value || null,
+      nombre: nombre.value.trim(),
+      apellido: apellido.value.trim(),
+      dni: dni.value.trim(),
+      email: email.value.trim(),
+      telefono: telefonoLimpio,
+      direccion: direccion.value.trim(),
+      ciudad: ciudad.value?.trim() || null,
+      departamento: departamento.value?.trim() || null,
+      codigoPostal: codigoPostal.value?.trim() || null,
+      observaciones: observaciones.value?.trim() || null,
     }
 
     let clienteId
@@ -381,7 +443,38 @@ const saveCliente = async () => {
     router.push('/clientes')
   } catch (error) {
     console.error('Error al guardar cliente:', error)
-    showError(error.response?.data?.message || 'Error al guardar el cliente')
+    
+    // Mejorar el manejo de errores para mostrar mensajes más claros
+    let errorMessage = 'Error al guardar el cliente'
+    
+    if (error.response?.data) {
+      const errorData = error.response.data
+      
+      // Manejar errores de validación de Bean Validation
+      if (errorData.errors) {
+        if (Array.isArray(errorData.errors)) {
+          errorMessage = errorData.errors
+            .map(err => err.message || `${err.field}: ${err.defaultMessage || 'Error de validación'}`)
+            .join(', ')
+        } else if (typeof errorData.errors === 'object') {
+          const erroresArray = Object.entries(errorData.errors)
+            .map(([campo, mensajes]) => {
+              const mensajesArray = Array.isArray(mensajes) ? mensajes : [mensajes]
+              return mensajesArray.map(msg => `${campo}: ${msg}`).join(', ')
+            })
+            .flat()
+          errorMessage = erroresArray.join(', ')
+        }
+      } else if (errorData.message) {
+        errorMessage = errorData.message
+      } else if (errorData.error) {
+        errorMessage = errorData.error
+      }
+    } else if (error.userMessage) {
+      errorMessage = error.userMessage
+    }
+    
+    showError(errorMessage)
   }
 }
 
