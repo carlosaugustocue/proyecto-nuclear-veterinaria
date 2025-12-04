@@ -132,6 +132,13 @@ EMAIL_HOST=smtp.gmail.com
 EMAIL_PORT=587
 EMAIL_USERNAME=...
 EMAIL_PASSWORD=...
+
+# CORS - URLs permitidas para el frontend (separadas por coma)
+# Ejemplo: https://super-croquembouche-672a93.netlify.app,https://tu-frontend.railway.app
+CORS_ALLOWED_ORIGINS=https://super-croquembouche-672a93.netlify.app
+
+# URL del frontend (para enlaces en emails, etc.)
+FRONTEND_URL=https://super-croquembouche-672a93.netlify.app
 ```
 
 ### Opción B: Valores Directos
@@ -158,6 +165,13 @@ EMAIL_HOST=smtp.gmail.com
 EMAIL_PORT=587
 EMAIL_USERNAME=...
 EMAIL_PASSWORD=...
+
+# CORS - URLs permitidas para el frontend (separadas por coma)
+# Ejemplo: https://super-croquembouche-672a93.netlify.app,https://tu-frontend.railway.app
+CORS_ALLOWED_ORIGINS=https://super-croquembouche-672a93.netlify.app
+
+# URL del frontend (para enlaces en emails, etc.)
+FRONTEND_URL=https://super-croquembouche-672a93.netlify.app
 ```
 
 **Nota importante:** La aplicación busca variables en este orden de prioridad:

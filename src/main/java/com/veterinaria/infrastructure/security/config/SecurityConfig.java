@@ -2,6 +2,7 @@ package com.veterinaria.infrastructure.security.config;
 
 import com.veterinaria.infrastructure.security.filter.JwtAuthenticationFilter;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -18,6 +19,7 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -33,6 +35,9 @@ import java.util.List;
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    
+    @Value("${app.cors.allowed-origins:}")
+    private String allowedOrigins;
 
     /**
      * Bean de PasswordEncoder usando BCrypt
@@ -174,14 +179,31 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         
-        // Orígenes permitidos usando patrones (permite wildcards)
-        // Esto permite localhost en cualquier puerto y dominios de ngrok
-        configuration.setAllowedOriginPatterns(List.of(
-                "http://localhost:*",           // Localhost en cualquier puerto
-                "https://*.ngrok-free.app",     // Dominios de ngrok (free)
-                "https://*.ngrok.io",           // Dominios de ngrok (paid)
-                "https://*.ngrok.app"           // Dominios de ngrok (alternativo)
-        ));
+        // Lista de patrones de orígenes permitidos
+        List<String> originPatterns = new ArrayList<>();
+        
+        // Patrones por defecto para desarrollo
+        originPatterns.add("http://localhost:*");           // Localhost en cualquier puerto
+        originPatterns.add("https://*.ngrok-free.app");     // Dominios de ngrok (free)
+        originPatterns.add("https://*.ngrok.io");           // Dominios de ngrok (paid)
+        originPatterns.add("https://*.ngrok.app");          // Dominios de ngrok (alternativo)
+        originPatterns.add("https://*.netlify.app");        // Dominios de Netlify
+        
+        // Agregar orígenes desde variable de entorno (separados por coma)
+        if (allowedOrigins != null && !allowedOrigins.trim().isEmpty()) {
+            String[] origins = allowedOrigins.split(",");
+            for (String origin : origins) {
+                String trimmed = origin.trim();
+                if (!trimmed.isEmpty()) {
+                    // Si es una URL completa, agregarla directamente
+                    if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
+                        originPatterns.add(trimmed);
+                    }
+                }
+            }
+        }
+        
+        configuration.setAllowedOriginPatterns(originPatterns);
         
         // Métodos HTTP permitidos
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
