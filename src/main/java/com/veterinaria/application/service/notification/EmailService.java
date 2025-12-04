@@ -96,12 +96,17 @@ public class EmailService {
     /**
      * Envía un email de forma asíncrona
      */
-    @Async
+    @Async("taskExecutor")
     public void enviarEmail(String destinatario, String asunto, String contenidoHtml) {
         try {
             // Validar que las credenciales estén configuradas
             if (emailFrom == null || emailFrom.trim().isEmpty()) {
                 log.error("❌ ERROR: Email remitente (app.email.from) no está configurado. Verifica la variable EMAIL_FROM o spring.mail.username");
+                return;
+            }
+            
+            if (mailSender == null) {
+                log.error("❌ ERROR: JavaMailSender no está disponible. No se puede enviar email.");
                 return;
             }
             
@@ -115,8 +120,12 @@ public class EmailService {
             helper.setSubject(asunto);
             helper.setText(contenidoHtml, true);
 
+            // Enviar email (esto se ejecuta en un hilo separado gracias a @Async)
+            // Los timeouts están configurados en MailConfig para evitar bloqueos prolongados
+            long inicio = System.currentTimeMillis();
             mailSender.send(message);
-            log.info("✓ Email enviado exitosamente a: {} (Asunto: {})", destinatario, asunto);
+            long duracion = System.currentTimeMillis() - inicio;
+            log.info("✓ Email enviado exitosamente a: {} (Asunto: {}) en {}ms", destinatario, asunto, duracion);
 
         } catch (MessagingException e) {
             log.error("❌ Error al enviar email a {}: {}", destinatario, e.getMessage(), e);

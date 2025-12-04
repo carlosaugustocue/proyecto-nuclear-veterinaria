@@ -103,6 +103,10 @@ public class MailConfig {
         props.put("mail.smtp.starttls.enable", "true");
         props.put("mail.smtp.starttls.required", "true");
         props.put("mail.debug", "false");
+        // Timeouts para evitar que el envío bloquee demasiado tiempo
+        props.put("mail.smtp.connectiontimeout", "5000"); // 5 segundos para conectar
+        props.put("mail.smtp.timeout", "10000"); // 10 segundos timeout total
+        props.put("mail.smtp.writetimeout", "10000"); // 10 segundos para escribir
 
         log.info("✓ JavaMailSender configurado - Host: {}, Port: {}, Username: {}", 
                 host, mailPort, username != null && !username.isEmpty() ? username : "NO CONFIGURADO");

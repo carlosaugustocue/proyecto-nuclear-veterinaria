@@ -508,6 +508,8 @@ public class FacturaServiceImpl implements FacturaService {
     @Override
     @Transactional
     public PagoDTO registrarPago(Long facturaId, CreatePagoRequest request) {
+        // NOTA: El email se envía de forma asíncrona después de que la transacción se complete
+        // para evitar que bloquee la respuesta HTTP
         log.info("Registrando pago de {} para factura ID: {}", request.getMonto(), facturaId);
 
         // 1. Obtener factura
@@ -558,6 +560,7 @@ public class FacturaServiceImpl implements FacturaService {
         facturaRepository.save(factura);
 
         // 10. Si es el primer pago registrado, enviar email de notificación con la factura completa
+        // NOTA: El email se envía de forma asíncrona para no bloquear la respuesta HTTP
         long cantidadPagos = pagoRepository.findByFacturaId(facturaId)
                 .stream()
                 .filter(p -> p.getIsActive())
@@ -565,6 +568,7 @@ public class FacturaServiceImpl implements FacturaService {
         
         if (cantidadPagos == 1) {
             // Es el primer pago, enviar email con la factura completa (incluyendo todos los detalles: servicios y productos)
+            // Se envía de forma asíncrona para no bloquear la respuesta HTTP
             try {
                 Cliente cliente = factura.getCliente();
                 if (cliente != null && cliente.getEmail() != null && !cliente.getEmail().trim().isEmpty()) {
@@ -574,6 +578,7 @@ public class FacturaServiceImpl implements FacturaService {
                     
                     String detallesHtml = generarResumenDetalles(facturaActualizada);
                     if (emailService != null) {
+                        // El email se envía de forma asíncrona, no bloquea la respuesta HTTP
                         emailService.notificarFacturaGenerada(
                             cliente.getEmail(),
                             cliente.getNombreCompleto(),
@@ -585,7 +590,7 @@ public class FacturaServiceImpl implements FacturaService {
                             facturaActualizada.getTotal() != null ? facturaActualizada.getTotal() : 0.0,
                             detallesHtml
                         );
-                        log.info("Email de factura enviado a: {} (primer pago registrado - incluye todos los detalles)", cliente.getEmail());
+                        log.info("Solicitud de envío de email de factura procesada para: {} (se enviará de forma asíncrona)", cliente.getEmail());
                     } else {
                         log.warn("EmailService no disponible - no se enviará email de factura");
                     }
@@ -593,7 +598,7 @@ public class FacturaServiceImpl implements FacturaService {
                     log.warn("No se puede enviar email de factura: cliente sin email válido");
                 }
             } catch (Exception e) {
-                log.error("Error al enviar email de factura después de registrar primer pago: {}", e.getMessage(), e);
+                log.error("Error al procesar solicitud de envío de email de factura: {}", e.getMessage(), e);
                 // No interrumpir el flujo si falla el email
             }
         }
