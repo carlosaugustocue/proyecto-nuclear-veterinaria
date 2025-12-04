@@ -57,12 +57,16 @@ public class VeterinariaApplication {
             
             // Mapear variables específicas de email a propiedades de Spring Boot
             // Primero verificar variables de entorno del sistema (Railway las proporciona directamente)
+            System.out.println("=== Diagnóstico de Email ===");
             String emailHost = System.getenv("EMAIL_HOST");
+            System.out.println("EMAIL_HOST (System.getenv): " + (emailHost != null ? emailHost : "NO ENCONTRADO"));
             if (emailHost == null || emailHost.trim().isEmpty()) {
                 emailHost = dotenv.get("EMAIL_HOST");
+                System.out.println("EMAIL_HOST (dotenv): " + (emailHost != null ? emailHost : "NO ENCONTRADO"));
             }
             if (emailHost == null || emailHost.trim().isEmpty()) {
                 emailHost = System.getProperty("EMAIL_HOST");
+                System.out.println("EMAIL_HOST (System.getProperty): " + (emailHost != null ? emailHost : "NO ENCONTRADO"));
             }
             
             String emailUsername = System.getenv("EMAIL_USERNAME");
@@ -84,6 +88,10 @@ public class VeterinariaApplication {
             if (emailHost != null && !emailHost.trim().isEmpty() && !"disabled".equals(emailHost)) {
                 System.setProperty("spring.mail.host", emailHost);
                 System.out.println("✓ EMAIL_HOST configurado: " + emailHost);
+                System.out.println("✓ spring.mail.host establecido como propiedad del sistema");
+            } else {
+                System.out.println("⚠️ EMAIL_HOST NO está configurado o está deshabilitado");
+                System.out.println("⚠️ El servicio de email NO estará disponible");
             }
             
             if (emailUsername != null && !emailUsername.trim().isEmpty() && System.getProperty("spring.mail.username") == null) {

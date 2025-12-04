@@ -22,6 +22,15 @@ public class MailConfig {
 
     @Value("${spring.mail.host:disabled}")
     private String mailHost;
+    
+    // Constructor para logging de diagnóstico
+    public MailConfig() {
+        String emailHostEnv = System.getenv("EMAIL_HOST");
+        String emailHostProp = System.getProperty("EMAIL_HOST");
+        log.info("=== MailConfig - Diagnóstico ===");
+        log.info("EMAIL_HOST (env): {}", emailHostEnv != null ? emailHostEnv : "NO CONFIGURADO");
+        log.info("EMAIL_HOST (property): {}", emailHostProp != null ? emailHostProp : "NO CONFIGURADO");
+    }
 
     @Value("${spring.mail.port:587}")
     private int mailPort;
@@ -34,16 +43,16 @@ public class MailConfig {
 
     /**
      * Crea el bean JavaMailSender solo si EMAIL_HOST está configurado y no está deshabilitado.
-     * La condición verifica tanto la variable de entorno EMAIL_HOST como spring.mail.host.
+     * La condición verifica directamente la variable de entorno EMAIL_HOST.
      */
     @Bean
     @ConditionalOnExpression(
-        "(T(java.lang.System).getenv('EMAIL_HOST') != null && " +
+        "T(java.lang.System).getenv('EMAIL_HOST') != null && " +
         "!T(java.lang.System).getenv('EMAIL_HOST').trim().isEmpty() && " +
-        "!T(java.lang.System).getenv('EMAIL_HOST').equals('disabled')) || " +
-        "'${spring.mail.host:disabled}' != 'disabled'"
+        "!T(java.lang.System).getenv('EMAIL_HOST').equals('disabled')"
     )
     public JavaMailSender javaMailSender() {
+        log.info("=== Creando bean JavaMailSender ===");
         // Verificar que EMAIL_HOST esté configurado (prioridad: variable de entorno > propiedad del sistema > propiedad de Spring)
         String emailHost = System.getenv("EMAIL_HOST");
         if (emailHost == null || emailHost.trim().isEmpty()) {
