@@ -94,8 +94,9 @@ public class SendGridEmailService {
 
             Email from = new Email(emailFrom, nombreClinica);
             Email to = new Email(destinatario);
-            // Asegurar encoding UTF-8 para caracteres especiales
-            Content content = new Content("text/html; charset=UTF-8", contenidoHtml);
+            // SendGrid maneja UTF-8 automáticamente cuando el HTML tiene <meta charset="UTF-8">
+            // No incluir charset en el content type porque SendGrid no lo acepta
+            Content content = new Content("text/html", contenidoHtml);
             Mail mail = new Mail(from, asunto, to, content);
 
             Request request = new Request();
