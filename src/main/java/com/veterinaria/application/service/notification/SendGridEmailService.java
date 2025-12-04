@@ -1,14 +1,15 @@
 package com.veterinaria.application.service.notification;
 
-import com.veterinaria.domain.enums.TipoNotificacion;
-import jakarta.mail.MessagingException;
-import jakarta.mail.internet.MimeMessage;
-import lombok.RequiredArgsConstructor;
+import com.sendgrid.Method;
+import com.sendgrid.Request;
+import com.sendgrid.Response;
+import com.sendgrid.SendGrid;
+import com.sendgrid.helpers.mail.Mail;
+import com.sendgrid.helpers.mail.objects.Content;
+import com.sendgrid.helpers.mail.objects.Email;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
-import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
@@ -16,37 +17,32 @@ import jakarta.annotation.PostConstruct;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
-import java.util.Map;
 
 /**
- * Servicio para envío de notificaciones por email usando SMTP.
- * Solo se crea si EMAIL_HOST está configurado Y SENDGRID_API_KEY NO está configurado.
- * Si SENDGRID_API_KEY está configurado, se usará SendGridEmailService en su lugar.
- *
+ * Servicio de email usando SendGrid API REST.
+ * Esta implementación usa la API REST de SendGrid en lugar de SMTP,
+ * lo que permite enviar emails desde Railway sin problemas de puertos bloqueados.
+ * 
+ * Se activa cuando SENDGRID_API_KEY está configurado.
+ * Implementa los mismos métodos que EmailService para ser intercambiable.
+ * 
  * @author Sistema Veterinaria
  */
-@Service
-@RequiredArgsConstructor
 @Slf4j
+@Service
 @ConditionalOnExpression(
-    "T(java.lang.System).getenv('EMAIL_HOST') != null && " +
-    "!T(java.lang.System).getenv('EMAIL_HOST').trim().isEmpty() && " +
-    "!T(java.lang.System).getenv('EMAIL_HOST').equals('disabled') && " +
-    "(T(java.lang.System).getenv('SENDGRID_API_KEY') == null || " +
-    "T(java.lang.System).getenv('SENDGRID_API_KEY').trim().isEmpty())"
+    "T(java.lang.System).getenv('SENDGRID_API_KEY') != null && " +
+    "!T(java.lang.System).getenv('SENDGRID_API_KEY').trim().isEmpty()"
 )
-public class EmailService {
+public class SendGridEmailService {
 
-    private final JavaMailSender mailSender;
-
-    @Value("${spring.mail.username:}")
-    private String fromEmail;
+    private SendGrid sendGrid;
+    
+    @Value("${app.email.from:}")
+    private String emailFrom;
 
     @Value("${app.nombre:Clínica Veterinaria}")
     private String nombreClinica;
-
-    @Value("${app.email.from:${spring.mail.username}}")
-    private String emailFrom;
 
     @Value("${app.frontend.url:http://localhost:3000}")
     private String frontendUrl;
@@ -57,111 +53,68 @@ public class EmailService {
     @Value("${app.contacto.direccion:}")
     private String direccionClinica;
 
-    @Value("${app.contacto.email:${spring.mail.username}}")
+    @Value("${app.contacto.email:${app.email.from}}")
     private String emailContacto;
 
     @PostConstruct
-    public void verificarConfiguracion() {
-        log.info("=== Configuración de Email ===");
-        log.info("Email remitente (app.email.from): {}", emailFrom != null && !emailFrom.isEmpty() ? emailFrom : "NO CONFIGURADO");
-        log.info("Frontend URL: {}", frontendUrl);
-        log.info("Nombre clínica: {}", nombreClinica);
-        log.info("Teléfono contacto: {}", telefonoClinica != null && !telefonoClinica.isEmpty() ? telefonoClinica : "NO CONFIGURADO");
-        log.info("Dirección contacto: {}", direccionClinica != null && !direccionClinica.isEmpty() ? direccionClinica : "NO CONFIGURADO");
-        log.info("Email contacto: {}", emailContacto != null && !emailContacto.isEmpty() ? emailContacto : "NO CONFIGURADO");
-        
-        // Verificar configuración de Spring Mail
-        try {
-            // Intentar obtener las propiedades del mailSender
-            log.info("Configuración SMTP - Host: {}", System.getProperty("spring.mail.host") != null ? 
-                    System.getProperty("spring.mail.host") : "Desde application.properties");
-            log.info("Configuración SMTP - Port: {}", System.getProperty("spring.mail.port") != null ? 
-                    System.getProperty("spring.mail.port") : "Desde application.properties");
-            log.info("Configuración SMTP - Username configurado: {}", 
-                    System.getenv("EMAIL_USERNAME") != null ? "SÍ (desde variable de entorno)" : 
-                    (System.getProperty("spring.mail.username") != null ? "SÍ (desde property)" : "NO"));
-            log.info("Configuración SMTP - Password configurado: {}", 
-                    System.getenv("EMAIL_PASSWORD") != null ? "SÍ (desde variable de entorno)" : 
-                    (System.getProperty("spring.mail.password") != null ? "SÍ (desde property)" : "NO"));
-        } catch (Exception e) {
-            log.warn("No se pudo verificar configuración SMTP: {}", e.getMessage());
-        }
-        
-        if (emailFrom == null || emailFrom.trim().isEmpty()) {
-            log.error("⚠️ ERROR: Email remitente no está configurado. Los emails NO se enviarán.");
-            log.error("⚠️ Configura EMAIL_FROM o spring.mail.username en las variables de entorno");
-            log.error("⚠️ Verifica que el archivo .env existe y tiene las variables configuradas");
+    public void inicializar() {
+        String apiKey = System.getenv("SENDGRID_API_KEY");
+        if (apiKey != null && !apiKey.trim().isEmpty()) {
+            this.sendGrid = new SendGrid(apiKey);
+            log.info("=== SendGrid Email Service Inicializado ===");
+            log.info("✓ SendGrid API Key configurado");
+            log.info("✓ Email remitente: {}", emailFrom != null && !emailFrom.isEmpty() ? emailFrom : "NO CONFIGURADO");
+            log.info("✓ Frontend URL: {}", frontendUrl);
+            log.info("⚠️  IMPORTANTE: Verifica que el remitente esté verificado en SendGrid");
         } else {
-            log.info("✓ Configuración de email remitente OK");
+            log.warn("⚠️ SendGrid API Key no está configurado. El servicio de email no estará disponible.");
         }
     }
 
     /**
-     * Envía un email de forma asíncrona
+     * Envía un email usando SendGrid API REST
      */
     @Async("taskExecutor")
     public void enviarEmail(String destinatario, String asunto, String contenidoHtml) {
         try {
-            // Validar que las credenciales estén configuradas
+            if (sendGrid == null) {
+                log.error("❌ ERROR: SendGrid no está inicializado. Verifica SENDGRID_API_KEY.");
+                return;
+            }
+
             if (emailFrom == null || emailFrom.trim().isEmpty()) {
-                log.error("❌ ERROR: Email remitente (app.email.from) no está configurado. Verifica la variable EMAIL_FROM o spring.mail.username");
+                log.error("❌ ERROR: Email remitente (app.email.from) no está configurado.");
                 return;
             }
-            
-            if (mailSender == null) {
-                log.error("❌ ERROR: JavaMailSender no está disponible. No se puede enviar email.");
-                return;
-            }
-            
-            log.info("Enviando email - De: {}, Para: {}, Asunto: {}", emailFrom, destinatario, asunto);
-            
-            MimeMessage message = mailSender.createMimeMessage();
-            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
 
-            helper.setFrom(emailFrom);
-            helper.setTo(destinatario);
-            helper.setSubject(asunto);
-            helper.setText(contenidoHtml, true);
+            log.info("Enviando email vía SendGrid - De: {}, Para: {}, Asunto: {}", emailFrom, destinatario, asunto);
 
-            // Enviar email (esto se ejecuta en un hilo separado gracias a @Async)
-            // Los timeouts están configurados en MailConfig para evitar bloqueos prolongados
+            Email from = new Email(emailFrom, nombreClinica);
+            Email to = new Email(destinatario);
+            Content content = new Content("text/html", contenidoHtml);
+            Mail mail = new Mail(from, asunto, to, content);
+
+            Request request = new Request();
+            request.setMethod(Method.POST);
+            request.setEndpoint("mail/send");
+            request.setBody(mail.build());
+
             long inicio = System.currentTimeMillis();
-            mailSender.send(message);
+            Response response = sendGrid.api(request);
             long duracion = System.currentTimeMillis() - inicio;
-            log.info("✓ Email enviado exitosamente a: {} (Asunto: {}) en {}ms", destinatario, asunto, duracion);
 
-        } catch (MessagingException e) {
-            log.error("❌ Error al enviar email a {}: {}", destinatario, e.getMessage(), e);
-            log.error("Detalles del error - Tipo: {}, Causa: {}", 
-                    e.getClass().getSimpleName(), 
-                    e.getCause() != null ? e.getCause().getMessage() : "N/A");
-            
-            // Errores comunes de Gmail
-            String errorMsg = e.getMessage() != null ? e.getMessage().toLowerCase() : "";
-            if (errorMsg.contains("authentication failed") || errorMsg.contains("535") || errorMsg.contains("534")) {
-                log.error("🔐 PROBLEMA DE AUTENTICACIÓN:");
-                log.error("   - Verifica que EMAIL_USERNAME y EMAIL_PASSWORD estén configurados");
-                log.error("   - Para Gmail, usa una 'Contraseña de aplicación' (no tu contraseña normal)");
-                log.error("   - Genera una nueva en: https://myaccount.google.com/apppasswords");
-                log.error("   - Verifica que la verificación en dos pasos esté activada");
-            } else if (errorMsg.contains("connection") || errorMsg.contains("timeout") || errorMsg.contains("could not connect")) {
-                log.error("🌐 PROBLEMA DE CONEXIÓN:");
-                log.error("   - Verifica tu conexión a internet");
-                log.error("   - Verifica que el puerto 587 no esté bloqueado por firewall");
-                log.error("   - Gmail puede tener límites de envío (500 emails/día para cuentas gratuitas)");
-            } else if (errorMsg.contains("quota") || errorMsg.contains("limit") || errorMsg.contains("550")) {
-                log.error("📊 LÍMITE DE GMAIL ALCANZADO:");
-                log.error("   - Gmail tiene límites de envío (500 emails/día para cuentas gratuitas)");
-                log.error("   - Espera 24 horas o considera usar una cuenta de Google Workspace");
-            } else if (errorMsg.contains("550-5.7.1") || errorMsg.contains("relay access denied")) {
-                log.error("🚫 ACCESO DENEGADO:");
-                log.error("   - Gmail puede estar bloqueando el envío desde aplicaciones");
-                log.error("   - Verifica que 'Permitir aplicaciones menos seguras' esté deshabilitado");
-                log.error("   - Usa una 'Contraseña de aplicación' en su lugar");
+            if (response.getStatusCode() >= 200 && response.getStatusCode() < 300) {
+                log.info("✓ Email enviado exitosamente vía SendGrid a: {} (Asunto: {}) en {}ms", 
+                        destinatario, asunto, duracion);
+            } else {
+                log.error("❌ Error al enviar email vía SendGrid - Status: {}, Body: {}", 
+                        response.getStatusCode(), response.getBody());
+                log.error("Detalles: {}", response.getHeaders());
             }
+
         } catch (Exception e) {
-            log.error("❌ Error inesperado al enviar email a {}: {}", destinatario, e.getMessage(), e);
-            log.error("Stack trace completo:", e);
+            log.error("❌ Error inesperado al enviar email vía SendGrid a {}: {}", 
+                    destinatario, e.getMessage(), e);
         }
     }
 
@@ -240,6 +193,7 @@ public class EmailService {
     }
 
     // ==================== TEMPLATES HTML ====================
+    // Los templates son idénticos a EmailService para mantener consistencia
 
     private String crearTemplateCitaCreada(String nombreCliente, String nombrePaciente,
                                             LocalDate fecha, LocalTime hora, String servicio, String token) {

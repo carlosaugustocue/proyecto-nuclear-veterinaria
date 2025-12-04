@@ -59,6 +59,13 @@
             <artifactId>spring-boot-starter-mail</artifactId>
         </dependency>
 
+        <!-- SendGrid for email via API (works with Railway blocked ports) -->
+        <dependency>
+            <groupId>com.sendgrid</groupId>
+            <artifactId>sendgrid-java</artifactId>
+            <version>4.10.1</version>
+        </dependency>
+
         <!-- Database -->
         <dependency>
             <groupId>com.mysql</groupId>

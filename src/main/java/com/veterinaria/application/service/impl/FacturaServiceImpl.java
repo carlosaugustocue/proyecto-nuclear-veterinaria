@@ -11,6 +11,7 @@ import com.veterinaria.application.repository.*;
 import com.veterinaria.application.service.FacturaService;
 import com.veterinaria.application.service.MovimientoInventarioService;
 import com.veterinaria.application.service.notification.EmailService;
+import com.veterinaria.application.service.notification.SendGridEmailService;
 import com.veterinaria.application.dto.inventory.CreateMovimientoRequest;
 import com.veterinaria.domain.entity.appointments.Cita;
 import com.veterinaria.domain.entity.appointments.TipoServicio;
@@ -58,6 +59,19 @@ public class FacturaServiceImpl implements FacturaService {
     
     @Autowired(required = false)
     private EmailService emailService;
+    
+    @Autowired(required = false)
+    private SendGridEmailService sendGridEmailService;
+    
+    /**
+     * Obtiene el servicio de email disponible (SendGrid tiene prioridad si está configurado)
+     */
+    private Object getEmailService() {
+        if (sendGridEmailService != null) {
+            return sendGridEmailService;
+        }
+        return emailService;
+    }
 
     @Override
     @Transactional
@@ -577,19 +591,34 @@ public class FacturaServiceImpl implements FacturaService {
                             .orElse(factura);
                     
                     String detallesHtml = generarResumenDetalles(facturaActualizada);
-                    if (emailService != null) {
+                    Object emailServiceToUse = getEmailService();
+                    if (emailServiceToUse != null) {
                         // El email se envía de forma asíncrona, no bloquea la respuesta HTTP
-                        emailService.notificarFacturaGenerada(
-                            cliente.getEmail(),
-                            cliente.getNombreCompleto(),
-                            facturaActualizada.getNumeroFactura(),
-                            facturaActualizada.getFechaEmision(),
-                            facturaActualizada.getSubtotal() != null ? facturaActualizada.getSubtotal() : 0.0,
-                            facturaActualizada.getTotalDescuentos() != null ? facturaActualizada.getTotalDescuentos() : 0.0,
-                            facturaActualizada.getTotalImpuestos() != null ? facturaActualizada.getTotalImpuestos() : 0.0,
-                            facturaActualizada.getTotal() != null ? facturaActualizada.getTotal() : 0.0,
-                            detallesHtml
-                        );
+                        if (emailServiceToUse instanceof SendGridEmailService) {
+                            ((SendGridEmailService) emailServiceToUse).notificarFacturaGenerada(
+                                cliente.getEmail(),
+                                cliente.getNombreCompleto(),
+                                facturaActualizada.getNumeroFactura(),
+                                facturaActualizada.getFechaEmision(),
+                                facturaActualizada.getSubtotal() != null ? facturaActualizada.getSubtotal() : 0.0,
+                                facturaActualizada.getTotalDescuentos() != null ? facturaActualizada.getTotalDescuentos() : 0.0,
+                                facturaActualizada.getTotalImpuestos() != null ? facturaActualizada.getTotalImpuestos() : 0.0,
+                                facturaActualizada.getTotal() != null ? facturaActualizada.getTotal() : 0.0,
+                                detallesHtml
+                            );
+                        } else if (emailServiceToUse instanceof EmailService) {
+                            ((EmailService) emailServiceToUse).notificarFacturaGenerada(
+                                cliente.getEmail(),
+                                cliente.getNombreCompleto(),
+                                facturaActualizada.getNumeroFactura(),
+                                facturaActualizada.getFechaEmision(),
+                                facturaActualizada.getSubtotal() != null ? facturaActualizada.getSubtotal() : 0.0,
+                                facturaActualizada.getTotalDescuentos() != null ? facturaActualizada.getTotalDescuentos() : 0.0,
+                                facturaActualizada.getTotalImpuestos() != null ? facturaActualizada.getTotalImpuestos() : 0.0,
+                                facturaActualizada.getTotal() != null ? facturaActualizada.getTotal() : 0.0,
+                                detallesHtml
+                            );
+                        }
                         log.info("Solicitud de envío de email de factura procesada para: {} (se enviará de forma asíncrona)", cliente.getEmail());
                     } else {
                         log.warn("EmailService no disponible - no se enviará email de factura");

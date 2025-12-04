@@ -11,6 +11,7 @@ import com.veterinaria.application.repository.TipoServicioRepository;
 import com.veterinaria.application.repository.UsuarioRepository;
 import com.veterinaria.application.service.CitaService;
 import com.veterinaria.application.service.notification.EmailService;
+import com.veterinaria.application.service.notification.SendGridEmailService;
 import com.veterinaria.application.service.validator.ValidadorDisponibilidad;
 import com.veterinaria.domain.entity.appointments.Cita;
 import com.veterinaria.domain.entity.appointments.TipoServicio;
@@ -23,6 +24,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
 
 /**
@@ -46,6 +48,60 @@ public class CitaServiceImpl implements CitaService {
     
     @Autowired(required = false)
     private EmailService emailService;
+    
+    @Autowired(required = false)
+    private SendGridEmailService sendGridEmailService;
+    
+    /**
+     * Obtiene el servicio de email disponible (SendGrid tiene prioridad si está configurado)
+     */
+    private Object getEmailService() {
+        if (sendGridEmailService != null) {
+            return sendGridEmailService;
+        }
+        return emailService;
+    }
+    
+    /**
+     * Helper para llamar métodos de notificación en el servicio de email disponible
+     */
+    private void notificarCitaCreada(String emailCliente, String nombreCliente,
+                                      String nombrePaciente, LocalDate fecha,
+                                      LocalTime hora, String tipoServicio, String token) {
+        Object emailServiceToUse = getEmailService();
+        if (emailServiceToUse instanceof SendGridEmailService) {
+            ((SendGridEmailService) emailServiceToUse).notificarCitaCreada(
+                emailCliente, nombreCliente, nombrePaciente, fecha, hora, tipoServicio, token);
+        } else if (emailServiceToUse instanceof EmailService) {
+            ((EmailService) emailServiceToUse).notificarCitaCreada(
+                emailCliente, nombreCliente, nombrePaciente, fecha, hora, tipoServicio, token);
+        }
+    }
+    
+    private void notificarVeterinarioCitaConfirmada(String emailVeterinario, String nombreVeterinario,
+                                                     String nombreCliente, String nombrePaciente,
+                                                     LocalDate fecha, LocalTime hora) {
+        Object emailServiceToUse = getEmailService();
+        if (emailServiceToUse instanceof SendGridEmailService) {
+            ((SendGridEmailService) emailServiceToUse).notificarVeterinarioCitaConfirmada(
+                emailVeterinario, nombreVeterinario, nombreCliente, nombrePaciente, fecha, hora);
+        } else if (emailServiceToUse instanceof EmailService) {
+            ((EmailService) emailServiceToUse).notificarVeterinarioCitaConfirmada(
+                emailVeterinario, nombreVeterinario, nombreCliente, nombrePaciente, fecha, hora);
+        }
+    }
+    
+    private void notificarCitaCancelada(String emailCliente, String nombreCliente,
+                                        String nombrePaciente, LocalDate fecha, String motivo) {
+        Object emailServiceToUse = getEmailService();
+        if (emailServiceToUse instanceof SendGridEmailService) {
+            ((SendGridEmailService) emailServiceToUse).notificarCitaCancelada(
+                emailCliente, nombreCliente, nombrePaciente, fecha, motivo);
+        } else if (emailServiceToUse instanceof EmailService) {
+            ((EmailService) emailServiceToUse).notificarCitaCancelada(
+                emailCliente, nombreCliente, nombrePaciente, fecha, motivo);
+        }
+    }
     
     // Constructor para inyección de dependencias requeridas
     public CitaServiceImpl(CitaRepository citaRepository,
@@ -153,8 +209,9 @@ public class CitaServiceImpl implements CitaService {
 
         // 9. Enviar notificación por email al cliente con link de confirmación
         try {
-            if (emailService != null) {
-                emailService.notificarCitaCreada(
+            Object emailServiceToUse = getEmailService();
+            if (emailServiceToUse != null) {
+                notificarCitaCreada(
                     cliente.getEmail(),
                     cliente.getNombreCompleto(),
                     paciente.getNombre(),
@@ -301,8 +358,9 @@ public class CitaServiceImpl implements CitaService {
 
         // Notificar al veterinario que la cita fue confirmada
         try {
-            if (emailService != null) {
-                emailService.notificarVeterinarioCitaConfirmada(
+            Object emailServiceToUse = getEmailService();
+            if (emailServiceToUse != null) {
+                notificarVeterinarioCitaConfirmada(
                         cita.getVeterinario().getEmail(),
                         cita.getVeterinario().getNombreCompleto(),
                         cita.getCliente().getNombreCompleto(),
@@ -350,8 +408,9 @@ public class CitaServiceImpl implements CitaService {
 
         // Notificar al veterinario que la cita fue confirmada
         try {
-            if (emailService != null) {
-                emailService.notificarVeterinarioCitaConfirmada(
+            Object emailServiceToUse = getEmailService();
+            if (emailServiceToUse != null) {
+                notificarVeterinarioCitaConfirmada(
                         cita.getVeterinario().getEmail(),
                         cita.getVeterinario().getNombreCompleto(),
                         cita.getCliente().getNombreCompleto(),
@@ -392,8 +451,9 @@ public class CitaServiceImpl implements CitaService {
 
         // Enviar notificación por email al cliente
         try {
-            if (emailService != null) {
-                emailService.notificarCitaCancelada(
+            Object emailServiceToUse = getEmailService();
+            if (emailServiceToUse != null) {
+                notificarCitaCancelada(
                         cita.getCliente().getEmail(),
                         cita.getCliente().getNombreCompleto(),
                         cita.getPaciente().getNombre(),
