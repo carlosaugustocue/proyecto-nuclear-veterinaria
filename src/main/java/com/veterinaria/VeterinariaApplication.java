@@ -141,6 +141,17 @@ public class VeterinariaApplication {
             System.out.println("✓ Usando MYSQL_URL para la conexión a la base de datos");
             System.out.println("  - URL original: " + maskPassword(mysqlUrl));
             System.out.println("  - URL normalizada: " + maskPassword(jdbcUrl));
+            // Extraer hostname para diagnóstico
+            try {
+                String hostname = extractHostname(jdbcUrl);
+                System.out.println("  - Hostname detectado: " + hostname);
+                System.out.println("  ⚠️  Si la conexión falla, verifica que:");
+                System.out.println("     1. El servicio MySQL esté iniciado en Railway");
+                System.out.println("     2. El servicio backend esté vinculado al servicio MySQL");
+                System.out.println("     3. El hostname '" + hostname + "' sea correcto");
+            } catch (Exception e) {
+                // Ignorar errores al extraer hostname
+            }
         } else if (dbUrl != null && !dbUrl.isEmpty() && !dbUrl.startsWith("${")) {
             // Normalizar también DB_URL por si acaso
             jdbcUrl = normalizeJdbcUrl(dbUrl);
@@ -159,7 +170,7 @@ public class VeterinariaApplication {
                              : ((dbName != null && !dbName.isEmpty() && !dbName.startsWith("${")) ? dbName : "railway");
             
             jdbcUrl = String.format(
-                "jdbc:mysql://%s:%s/%s?useUnicode=true&characterEncoding=UTF-8&serverTimezone=UTC&useSSL=false&allowPublicKeyRetrieval=true",
+                "jdbc:mysql://%s:%s/%s?useUnicode=true&characterEncoding=UTF-8&serverTimezone=UTC&useSSL=false&allowPublicKeyRetrieval=true&connectTimeout=60000&socketTimeout=60000&autoReconnect=true&failOverReadOnly=false&maxReconnects=3",
                 host, port, database
             );
             System.out.println("✓ Construyendo URL de base de datos desde variables individuales");
@@ -215,6 +226,7 @@ public class VeterinariaApplication {
     /**
      * Normaliza una URL de MySQL para asegurar que tenga el prefijo jdbc: requerido por el driver JDBC.
      * Railway puede proporcionar URLs con formato mysql:// en lugar de jdbc:mysql://
+     * También agrega parámetros de conexión adicionales para manejar mejor los timeouts en Railway.
      */
     private static String normalizeJdbcUrl(String url) {
         if (url == null || url.isEmpty()) {
@@ -223,10 +235,30 @@ public class VeterinariaApplication {
         
         // Si la URL comienza con mysql:// pero no con jdbc:mysql://, agregar el prefijo jdbc:
         if (url.startsWith("mysql://") && !url.startsWith("jdbc:mysql://")) {
-            return "jdbc:" + url;
+            url = "jdbc:" + url;
         }
         
-        // Si ya tiene jdbc: o es una URL completa, retornarla tal cual
+        // Agregar parámetros de conexión adicionales si no están presentes
+        // Estos parámetros ayudan a manejar mejor los timeouts y reconexiones en Railway
+        if (url.contains("?")) {
+            // La URL ya tiene parámetros, verificar si tiene los que necesitamos
+            if (!url.contains("connectTimeout")) {
+                url += "&connectTimeout=60000";
+            }
+            if (!url.contains("socketTimeout")) {
+                url += "&socketTimeout=60000";
+            }
+            if (!url.contains("autoReconnect")) {
+                url += "&autoReconnect=true";
+            }
+            if (!url.contains("maxReconnects")) {
+                url += "&maxReconnects=3";
+            }
+        } else {
+            // La URL no tiene parámetros, agregarlos
+            url += "?connectTimeout=60000&socketTimeout=60000&autoReconnect=true&maxReconnects=3";
+        }
+        
         return url;
     }
     
@@ -238,5 +270,33 @@ public class VeterinariaApplication {
         // Ocultar contraseña en la URL si está presente
         return url.replaceAll("password=[^&;]*", "password=***")
                   .replaceAll(":([^:@/]+)@", ":***@");
+    }
+    
+    /**
+     * Extrae el hostname de una URL JDBC para diagnóstico.
+     */
+    private static String extractHostname(String jdbcUrl) {
+        if (jdbcUrl == null || jdbcUrl.isEmpty()) {
+            return "unknown";
+        }
+        // Formato: jdbc:mysql://hostname:port/database
+        try {
+            int start = jdbcUrl.indexOf("://");
+            if (start == -1) return "unknown";
+            start += 3;
+            int end = jdbcUrl.indexOf(":", start);
+            if (end == -1) {
+                end = jdbcUrl.indexOf("/", start);
+                if (end == -1) {
+                    end = jdbcUrl.indexOf("?", start);
+                }
+            }
+            if (end == -1) {
+                return jdbcUrl.substring(start);
+            }
+            return jdbcUrl.substring(start, end);
+        } catch (Exception e) {
+            return "unknown";
+        }
     }
 }

@@ -86,11 +86,14 @@ Después de agregar las variables:
 
 ## Troubleshooting
 
-### Error: "Connection refused"
+### Error: "Connection refused" o "Connect timed out"
 
 - Verifica que las variables `MYSQLHOST`, `MYSQLPORT`, etc. estén configuradas
-- Asegúrate de que el servicio MySQL esté corriendo
+- Asegúrate de que el servicio MySQL esté corriendo y en estado "ACTIVE"
 - Verifica que ambos servicios estén en el mismo proyecto de Railway
+- **Importante:** Si ves un hostname diferente en el dashboard de MySQL (como `shinkansen.proxy.rlwy.net`), asegúrate de que `MYSQL_URL` o `MYSQLHOST` use el hostname correcto
+- Railway puede usar diferentes hostnames según la configuración. Verifica en la pestaña "Variables" del servicio MySQL cuál es el hostname real
+- Si el MySQL está recién desplegado, espera 1-2 minutos para que esté completamente listo antes de que el backend intente conectarse
 
 ### Error: "Access denied"
 
