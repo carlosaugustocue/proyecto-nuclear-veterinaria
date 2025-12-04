@@ -13,9 +13,12 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import jakarta.annotation.PostConstruct;
+import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Locale;
 import java.util.Map;
 
 /**
@@ -239,6 +242,21 @@ public class EmailService {
         enviarEmail(emailCliente, asunto, contenido);
     }
 
+    // ==================== UTILIDADES ====================
+    
+    /**
+     * Formatea un número en formato colombiano (punto para miles, coma para decimales)
+     * Ejemplo: 100000.50 -> "100.000,50"
+     */
+    private String formatearMonedaColombiana(Double valor) {
+        if (valor == null) {
+            return "0,00";
+        }
+        DecimalFormatSymbols symbols = new DecimalFormatSymbols(Locale.GERMAN); // Usa punto para miles, coma para decimales
+        DecimalFormat formatter = new DecimalFormat("#,##0.00", symbols);
+        return formatter.format(valor);
+    }
+
     // ==================== TEMPLATES HTML ====================
 
     private String crearTemplateCitaCreada(String nombreCliente, String nombrePaciente,
@@ -415,12 +433,12 @@ public class EmailService {
                             
                             <div class="total-box">
                                 <div class="subtotal-line">
-                                    <strong>Subtotal:</strong> S/ %.2f
+                                    <strong>Subtotal:</strong> S/ %s
                                 </div>
                                 %s
                                 %s
                                 <div class="total" style="margin-top: 10px; padding-top: 10px; border-top: 2px solid #1976d2;">
-                                    Total: S/ %.2f
+                                    Total: S/ %s
                                 </div>
                             </div>
                         </div>
@@ -444,12 +462,12 @@ public class EmailService {
                 fechaEmision != null ? fechaEmision.format(DateTimeFormatter.ofPattern("dd/MM/yyyy")) : 
                 LocalDate.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")),
                 detalles,
-                subtotal != null ? subtotal : 0.0,
+                formatearMonedaColombiana(subtotal),
                 totalDescuentos != null && totalDescuentos > 0 ? 
-                    String.format("<div class=\"subtotal-line\" style=\"color: #d32f2f;\"><strong>Descuentos:</strong> -S/ %.2f</div>", totalDescuentos) : "",
+                    String.format("<div class=\"subtotal-line\" style=\"color: #d32f2f;\"><strong>Descuentos:</strong> -S/ %s</div>", formatearMonedaColombiana(totalDescuentos)) : "",
                 totalImpuestos != null && totalImpuestos > 0 ? 
-                    String.format("<div class=\"subtotal-line\"><strong>Impuestos:</strong> S/ %.2f</div>", totalImpuestos) : "",
-                montoTotal != null ? montoTotal : 0.0,
+                    String.format("<div class=\"subtotal-line\"><strong>Impuestos:</strong> S/ %s</div>", formatearMonedaColombiana(totalImpuestos)) : "",
+                formatearMonedaColombiana(montoTotal),
                 crearInfoContacto(),
                 nombreClinica, 
                 LocalDate.now().getYear(),

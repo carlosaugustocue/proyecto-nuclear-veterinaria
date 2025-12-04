@@ -27,8 +27,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * Implementación del servicio de Facturas.
@@ -127,6 +130,19 @@ public class FacturaServiceImpl implements FacturaService {
     }
 
     /**
+     * Formatea un número en formato colombiano (punto para miles, coma para decimales)
+     * Ejemplo: 100000.50 -> "100.000,50"
+     */
+    private String formatearMonedaColombiana(Double valor) {
+        if (valor == null) {
+            return "0,00";
+        }
+        DecimalFormatSymbols symbols = new DecimalFormatSymbols(Locale.GERMAN); // Usa punto para miles, coma para decimales
+        DecimalFormat formatter = new DecimalFormat("#,##0.00", symbols);
+        return formatter.format(valor);
+    }
+
+    /**
      * Genera un resumen detallado de los detalles de la factura en formato HTML
      */
     private String generarResumenDetalles(Factura factura) {
@@ -156,10 +172,10 @@ public class FacturaServiceImpl implements FacturaService {
                         detalle.getCantidad()));
                 resumen.append(String.format("<td style='padding: 8px; border-bottom: 1px solid #eee;'>%s</td>", 
                         detalle.getDescripcion() != null ? detalle.getDescripcion() : "Sin descripción"));
-                resumen.append(String.format("<td style='padding: 8px; text-align: right; border-bottom: 1px solid #eee;'>S/ %.2f</td>", 
-                        detalle.getPrecioUnitario() != null ? detalle.getPrecioUnitario() : 0.0));
-                resumen.append(String.format("<td style='padding: 8px; text-align: right; border-bottom: 1px solid #eee; font-weight: bold;'>S/ %.2f</td>", 
-                        detalle.getTotal() != null ? detalle.getTotal() : 0.0));
+                resumen.append(String.format("<td style='padding: 8px; text-align: right; border-bottom: 1px solid #eee;'>S/ %s</td>", 
+                        formatearMonedaColombiana(detalle.getPrecioUnitario())));
+                resumen.append(String.format("<td style='padding: 8px; text-align: right; border-bottom: 1px solid #eee; font-weight: bold;'>S/ %s</td>", 
+                        formatearMonedaColombiana(detalle.getTotal())));
                 resumen.append("</tr>");
             }
         }
@@ -176,22 +192,22 @@ public class FacturaServiceImpl implements FacturaService {
             if (factura.getSubtotal() != null) {
                 resumen.append(String.format(
                     "<tr><td style='padding: 5px; text-align: right;'><strong>Subtotal:</strong></td>" +
-                    "<td style='padding: 5px; text-align: right;'>S/ %.2f</td></tr>",
-                    factura.getSubtotal()));
+                    "<td style='padding: 5px; text-align: right;'>S/ %s</td></tr>",
+                    formatearMonedaColombiana(factura.getSubtotal())));
             }
             
             if (factura.getTotalDescuentos() != null && factura.getTotalDescuentos() > 0) {
                 resumen.append(String.format(
                     "<tr><td style='padding: 5px; text-align: right;'><strong>Descuentos:</strong></td>" +
-                    "<td style='padding: 5px; text-align: right; color: #d32f2f;'>-S/ %.2f</td></tr>",
-                    factura.getTotalDescuentos()));
+                    "<td style='padding: 5px; text-align: right; color: #d32f2f;'>-S/ %s</td></tr>",
+                    formatearMonedaColombiana(factura.getTotalDescuentos())));
             }
             
             if (factura.getTotalImpuestos() != null && factura.getTotalImpuestos() > 0) {
                 resumen.append(String.format(
                     "<tr><td style='padding: 5px; text-align: right;'><strong>Impuestos:</strong></td>" +
-                    "<td style='padding: 5px; text-align: right;'>S/ %.2f</td></tr>",
-                    factura.getTotalImpuestos()));
+                    "<td style='padding: 5px; text-align: right;'>S/ %s</td></tr>",
+                    formatearMonedaColombiana(factura.getTotalImpuestos())));
             }
             
             resumen.append("</table>");
