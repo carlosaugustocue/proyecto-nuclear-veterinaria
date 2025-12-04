@@ -14,6 +14,8 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import jakarta.annotation.PostConstruct;
+import jakarta.mail.internet.MimeUtility;
+import java.io.UnsupportedEncodingException;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.time.LocalDate;
@@ -92,12 +94,18 @@ public class SendGridEmailService {
 
             log.info("Enviando email vía SendGrid - De: {}, Para: {}, Asunto: {}", emailFrom, destinatario, asunto);
 
-            Email from = new Email(emailFrom, nombreClinica);
+            // Codificar el asunto con MIME para caracteres especiales (UTF-8)
+            String asuntoCodificado = codificarAsunto(asunto);
+            
+            // Codificar también el nombre del remitente si contiene caracteres especiales
+            String nombreRemitenteCodificado = codificarAsunto(nombreClinica);
+            
+            Email from = new Email(emailFrom, nombreRemitenteCodificado);
             Email to = new Email(destinatario);
             // SendGrid maneja UTF-8 automáticamente cuando el HTML tiene <meta charset="UTF-8">
             // No incluir charset en el content type porque SendGrid no lo acepta
             Content content = new Content("text/html", contenidoHtml);
-            Mail mail = new Mail(from, asunto, to, content);
+            Mail mail = new Mail(from, asuntoCodificado, to, content);
 
             Request request = new Request();
             request.setMethod(Method.POST);
@@ -198,6 +206,32 @@ public class SendGridEmailService {
     }
 
     // ==================== UTILIDADES ====================
+    
+    /**
+     * Codifica el asunto del email usando MIME encoding para caracteres especiales UTF-8
+     * Esto asegura que caracteres como "í", "á", "é", etc. se muestren correctamente
+     * Usa quoted-printable (Q) que es más estándar para asuntos de email
+     */
+    private String codificarAsunto(String asunto) {
+        if (asunto == null || asunto.isEmpty()) {
+            return asunto;
+        }
+        try {
+            // Verificar si el asunto contiene caracteres no-ASCII
+            boolean tieneCaracteresEspeciales = asunto.chars().anyMatch(c -> c > 127);
+            
+            if (tieneCaracteresEspeciales) {
+                // Codificar usando MIME quoted-printable para caracteres especiales
+                // Esto es más estándar para asuntos de email que Base64
+                return MimeUtility.encodeText(asunto, "UTF-8", "Q");
+            }
+            // Si no tiene caracteres especiales, devolver tal cual
+            return asunto;
+        } catch (UnsupportedEncodingException e) {
+            log.warn("No se pudo codificar el asunto con MIME, usando asunto original: {}", e.getMessage());
+            return asunto;
+        }
+    }
     
     /**
      * Formatea un número en formato colombiano (punto para miles, coma para decimales)
