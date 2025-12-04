@@ -1,8 +1,9 @@
 package com.veterinaria.presentation.controller;
 
 import com.veterinaria.application.service.notification.EmailService;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -12,15 +13,21 @@ import java.util.Map;
 
 /**
  * Controlador temporal para probar funcionalidad de emails
+ * Solo está disponible si EmailService está configurado (email habilitado)
  * ELIMINAR EN PRODUCCIÓN
  */
 @Slf4j
 @RestController
 @RequestMapping("/api/test/email")
-@RequiredArgsConstructor
+@ConditionalOnBean(EmailService.class)
 public class TestEmailController {
 
     private final EmailService emailService;
+    
+    @Autowired
+    public TestEmailController(EmailService emailService) {
+        this.emailService = emailService;
+    }
 
     /**
      * Endpoint de prueba para verificar envío de emails

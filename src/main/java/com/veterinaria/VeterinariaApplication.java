@@ -274,16 +274,25 @@ public class VeterinariaApplication {
     
     /**
      * Extrae el hostname de una URL JDBC para diagnóstico.
+     * Maneja URLs con formato: jdbc:mysql://[user:password@]hostname:port/database
      */
     private static String extractHostname(String jdbcUrl) {
         if (jdbcUrl == null || jdbcUrl.isEmpty()) {
             return "unknown";
         }
-        // Formato: jdbc:mysql://hostname:port/database
         try {
+            // Buscar el inicio después de "://"
             int start = jdbcUrl.indexOf("://");
             if (start == -1) return "unknown";
             start += 3;
+            
+            // Si hay credenciales (usuario:password@), buscar después del @
+            int atIndex = jdbcUrl.indexOf("@", start);
+            if (atIndex != -1) {
+                start = atIndex + 1;
+            }
+            
+            // Buscar el final del hostname (puede ser :puerto o /database o ?params)
             int end = jdbcUrl.indexOf(":", start);
             if (end == -1) {
                 end = jdbcUrl.indexOf("/", start);
@@ -291,6 +300,7 @@ public class VeterinariaApplication {
                     end = jdbcUrl.indexOf("?", start);
                 }
             }
+            
             if (end == -1) {
                 return jdbcUrl.substring(start);
             }
