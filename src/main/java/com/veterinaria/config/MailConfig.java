@@ -1,7 +1,8 @@
 package com.veterinaria.config;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -12,13 +13,14 @@ import java.util.Properties;
 
 /**
  * Configuración manual de email para producción.
- * Solo se configura si EMAIL_HOST está disponible.
+ * Solo se configura si EMAIL_HOST está disponible y no está deshabilitado.
  */
+@Slf4j
 @Configuration
 @Profile("prod")
 public class MailConfig {
 
-    @Value("${spring.mail.host:}")
+    @Value("${spring.mail.host:disabled}")
     private String mailHost;
 
     @Value("${spring.mail.port:587}")
@@ -30,28 +32,56 @@ public class MailConfig {
     @Value("${spring.mail.password:}")
     private String mailPassword;
 
+    /**
+     * Crea el bean JavaMailSender solo si EMAIL_HOST está configurado y no está deshabilitado.
+     * La condición verifica que spring.mail.host no sea "disabled" (lo que indica que EMAIL_HOST está configurado).
+     */
     @Bean
-    @ConditionalOnProperty(name = "EMAIL_HOST", matchIfMissing = false)
+    @ConditionalOnExpression("'${spring.mail.host:disabled}' != 'disabled'")
     public JavaMailSender javaMailSender() {
-        // Verificar que EMAIL_HOST esté configurado
-        String emailHost = System.getProperty("EMAIL_HOST", System.getenv("EMAIL_HOST"));
-        if ((emailHost == null || emailHost.trim().isEmpty()) && 
-            (mailHost == null || mailHost.trim().isEmpty() || "disabled".equals(mailHost))) {
-            return null;
+        // Verificar que EMAIL_HOST esté configurado (prioridad: variable de entorno > propiedad del sistema > propiedad de Spring)
+        String emailHost = System.getenv("EMAIL_HOST");
+        if (emailHost == null || emailHost.trim().isEmpty()) {
+            emailHost = System.getProperty("EMAIL_HOST");
+        }
+        if (emailHost == null || emailHost.trim().isEmpty()) {
+            emailHost = mailHost;
         }
         
+        // Si el host está deshabilitado o vacío, lanzar excepción (no debería llegar aquí si la condición funciona)
+        if (emailHost == null || emailHost.trim().isEmpty() || "disabled".equals(emailHost)) {
+            log.error("❌ ERROR: EMAIL_HOST está configurado pero tiene un valor inválido: {}", emailHost);
+            throw new IllegalStateException("EMAIL_HOST debe estar configurado con un host SMTP válido");
+        }
+        
+        log.info("✓ Configurando JavaMailSender con host: {}", emailHost);
+        
         // Usar el valor de la variable de entorno si está disponible, sino el de la propiedad
-        String host = (emailHost != null && !emailHost.trim().isEmpty()) ? emailHost : mailHost;
+        String host = emailHost;
 
         JavaMailSenderImpl mailSender = new JavaMailSenderImpl();
         mailSender.setHost(host);
         mailSender.setPort(mailPort);
         
         // Obtener username y password de variables de entorno si están disponibles
-        String username = System.getProperty("EMAIL_USERNAME", System.getenv("EMAIL_USERNAME"));
-        String password = System.getProperty("EMAIL_PASSWORD", System.getenv("EMAIL_PASSWORD"));
-        mailSender.setUsername(username != null ? username : mailUsername);
-        mailSender.setPassword(password != null ? password : mailPassword);
+        String username = System.getenv("EMAIL_USERNAME");
+        if (username == null || username.trim().isEmpty()) {
+            username = System.getProperty("EMAIL_USERNAME");
+        }
+        if (username == null || username.trim().isEmpty()) {
+            username = mailUsername;
+        }
+        
+        String password = System.getenv("EMAIL_PASSWORD");
+        if (password == null || password.trim().isEmpty()) {
+            password = System.getProperty("EMAIL_PASSWORD");
+        }
+        if (password == null || password.trim().isEmpty()) {
+            password = mailPassword;
+        }
+        
+        mailSender.setUsername(username);
+        mailSender.setPassword(password != null ? password : "");
 
         Properties props = mailSender.getJavaMailProperties();
         props.put("mail.transport.protocol", "smtp");
@@ -59,6 +89,9 @@ public class MailConfig {
         props.put("mail.smtp.starttls.enable", "true");
         props.put("mail.smtp.starttls.required", "true");
         props.put("mail.debug", "false");
+
+        log.info("✓ JavaMailSender configurado - Host: {}, Port: {}, Username: {}", 
+                host, mailPort, username != null && !username.isEmpty() ? username : "NO CONFIGURADO");
 
         return mailSender;
     }
