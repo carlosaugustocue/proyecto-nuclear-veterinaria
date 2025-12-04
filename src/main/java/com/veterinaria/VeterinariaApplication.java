@@ -136,13 +136,16 @@ public class VeterinariaApplication {
         String jdbcUrl = null;
         
         if (mysqlUrl != null && !mysqlUrl.isEmpty() && !mysqlUrl.startsWith("${")) {
-            jdbcUrl = mysqlUrl;
+            // Railway puede proporcionar URLs con formato mysql:// en lugar de jdbc:mysql://
+            jdbcUrl = normalizeJdbcUrl(mysqlUrl);
             System.out.println("✓ Usando MYSQL_URL para la conexión a la base de datos");
-            System.out.println("  - URL: " + maskPassword(mysqlUrl));
+            System.out.println("  - URL original: " + maskPassword(mysqlUrl));
+            System.out.println("  - URL normalizada: " + maskPassword(jdbcUrl));
         } else if (dbUrl != null && !dbUrl.isEmpty() && !dbUrl.startsWith("${")) {
-            jdbcUrl = dbUrl;
+            // Normalizar también DB_URL por si acaso
+            jdbcUrl = normalizeJdbcUrl(dbUrl);
             System.out.println("✓ Usando DB_URL para la conexión a la base de datos");
-            System.out.println("  - URL: " + maskPassword(dbUrl));
+            System.out.println("  - URL: " + maskPassword(jdbcUrl));
         } else {
             // Construir desde variables individuales
             String host = (mysqlHost != null && !mysqlHost.isEmpty() && !mysqlHost.startsWith("${")) 
@@ -207,6 +210,24 @@ public class VeterinariaApplication {
     private static String getEnvOrProperty(String key, String defaultValue) {
         String value = getEnvOrProperty(key);
         return (value != null && !value.isEmpty()) ? value : defaultValue;
+    }
+    
+    /**
+     * Normaliza una URL de MySQL para asegurar que tenga el prefijo jdbc: requerido por el driver JDBC.
+     * Railway puede proporcionar URLs con formato mysql:// en lugar de jdbc:mysql://
+     */
+    private static String normalizeJdbcUrl(String url) {
+        if (url == null || url.isEmpty()) {
+            return url;
+        }
+        
+        // Si la URL comienza con mysql:// pero no con jdbc:mysql://, agregar el prefijo jdbc:
+        if (url.startsWith("mysql://") && !url.startsWith("jdbc:mysql://")) {
+            return "jdbc:" + url;
+        }
+        
+        // Si ya tiene jdbc: o es una URL completa, retornarla tal cual
+        return url;
     }
     
     /**
