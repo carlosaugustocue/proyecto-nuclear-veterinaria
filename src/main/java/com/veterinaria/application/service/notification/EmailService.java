@@ -6,6 +6,7 @@ import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.scheduling.annotation.Async;
@@ -19,12 +20,14 @@ import java.util.Map;
 
 /**
  * Servicio para envío de notificaciones por email.
+ * Solo se crea si JavaMailSender está disponible (email configurado).
  *
  * @author Sistema Veterinaria
  */
 @Service
 @RequiredArgsConstructor
 @Slf4j
+@ConditionalOnBean(JavaMailSender.class)
 public class EmailService {
 
     private final JavaMailSender mailSender;

@@ -22,6 +22,7 @@ import com.veterinaria.domain.enums.EstadoFactura;
 import com.veterinaria.domain.enums.TipoMovimiento;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -54,7 +55,9 @@ public class FacturaServiceImpl implements FacturaService {
     private final DetalleFacturaMapper detalleFacturaMapper;
     private final PagoMapper pagoMapper;
     private final DescuentoMapper descuentoMapper;
-    private final EmailService emailService;
+    
+    @Autowired(required = false)
+    private EmailService emailService;
 
     @Override
     @Transactional
@@ -570,7 +573,8 @@ public class FacturaServiceImpl implements FacturaService {
                             .orElse(factura);
                     
                     String detallesHtml = generarResumenDetalles(facturaActualizada);
-                    emailService.notificarFacturaGenerada(
+                    if (emailService != null) {
+                        emailService.notificarFacturaGenerada(
                             cliente.getEmail(),
                             cliente.getNombreCompleto(),
                             facturaActualizada.getNumeroFactura(),
@@ -580,8 +584,11 @@ public class FacturaServiceImpl implements FacturaService {
                             facturaActualizada.getTotalImpuestos() != null ? facturaActualizada.getTotalImpuestos() : 0.0,
                             facturaActualizada.getTotal() != null ? facturaActualizada.getTotal() : 0.0,
                             detallesHtml
-                    );
-                    log.info("Email de factura enviado a: {} (primer pago registrado - incluye todos los detalles)", cliente.getEmail());
+                        );
+                        log.info("Email de factura enviado a: {} (primer pago registrado - incluye todos los detalles)", cliente.getEmail());
+                    } else {
+                        log.warn("EmailService no disponible - no se enviará email de factura");
+                    }
                 } else {
                     log.warn("No se puede enviar email de factura: cliente sin email válido");
                 }

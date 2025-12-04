@@ -17,8 +17,8 @@ import com.veterinaria.domain.entity.appointments.TipoServicio;
 import com.veterinaria.domain.entity.patients.Cliente;
 import com.veterinaria.domain.entity.patients.Paciente;
 import com.veterinaria.domain.entity.security.Usuario;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,7 +33,6 @@ import java.util.List;
  */
 @Slf4j
 @Service
-@RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class CitaServiceImpl implements CitaService {
 
@@ -44,7 +43,26 @@ public class CitaServiceImpl implements CitaService {
     private final TipoServicioRepository tipoServicioRepository;
     private final ValidadorDisponibilidad validadorDisponibilidad;
     private final CitaMapper citaMapper;
-    private final EmailService emailService;
+    
+    @Autowired(required = false)
+    private EmailService emailService;
+    
+    // Constructor para inyección de dependencias requeridas
+    public CitaServiceImpl(CitaRepository citaRepository,
+                          UsuarioRepository usuarioRepository,
+                          PacienteRepository pacienteRepository,
+                          ClienteRepository clienteRepository,
+                          TipoServicioRepository tipoServicioRepository,
+                          ValidadorDisponibilidad validadorDisponibilidad,
+                          CitaMapper citaMapper) {
+        this.citaRepository = citaRepository;
+        this.usuarioRepository = usuarioRepository;
+        this.pacienteRepository = pacienteRepository;
+        this.clienteRepository = clienteRepository;
+        this.tipoServicioRepository = tipoServicioRepository;
+        this.validadorDisponibilidad = validadorDisponibilidad;
+        this.citaMapper = citaMapper;
+    }
 
     @Override
     @Transactional
@@ -135,7 +153,8 @@ public class CitaServiceImpl implements CitaService {
 
         // 9. Enviar notificación por email al cliente con link de confirmación
         try {
-            emailService.notificarCitaCreada(
+            if (emailService != null) {
+                emailService.notificarCitaCreada(
                     cliente.getEmail(),
                     cliente.getNombreCompleto(),
                     paciente.getNombre(),
@@ -143,8 +162,11 @@ public class CitaServiceImpl implements CitaService {
                     guardada.getHora(),
                     tipoServicio.getNombre(),
                     tokenConfirmacion
-            );
-            log.info("✓ Solicitud de envío de email de confirmación procesada para: {}", cliente.getEmail());
+                );
+                log.info("✓ Solicitud de envío de email de confirmación procesada para: {}", cliente.getEmail());
+            } else {
+                log.warn("EmailService no disponible - no se enviará email de confirmación");
+            }
         } catch (Exception e) {
             log.error("❌ Error al enviar email de confirmación de cita a {}: {}", cliente.getEmail(), e.getMessage());
             log.error("   Tipo de error: {}", e.getClass().getSimpleName());
@@ -279,15 +301,19 @@ public class CitaServiceImpl implements CitaService {
 
         // Notificar al veterinario que la cita fue confirmada
         try {
-            emailService.notificarVeterinarioCitaConfirmada(
-                    cita.getVeterinario().getEmail(),
-                    cita.getVeterinario().getNombreCompleto(),
-                    cita.getCliente().getNombreCompleto(),
-                    cita.getPaciente().getNombre(),
-                    cita.getFecha(),
-                    cita.getHora()
-            );
-            log.info("Email de notificación enviado al veterinario: {}", cita.getVeterinario().getEmail());
+            if (emailService != null) {
+                emailService.notificarVeterinarioCitaConfirmada(
+                        cita.getVeterinario().getEmail(),
+                        cita.getVeterinario().getNombreCompleto(),
+                        cita.getCliente().getNombreCompleto(),
+                        cita.getPaciente().getNombre(),
+                        cita.getFecha(),
+                        cita.getHora()
+                );
+                log.info("Email de notificación enviado al veterinario: {}", cita.getVeterinario().getEmail());
+            } else {
+                log.warn("EmailService no disponible - no se enviará notificación al veterinario");
+            }
         } catch (Exception e) {
             log.error("Error al enviar email de notificación al veterinario: {}", e.getMessage());
         }
@@ -324,15 +350,19 @@ public class CitaServiceImpl implements CitaService {
 
         // Notificar al veterinario que la cita fue confirmada
         try {
-            emailService.notificarVeterinarioCitaConfirmada(
-                    cita.getVeterinario().getEmail(),
-                    cita.getVeterinario().getNombreCompleto(),
-                    cita.getCliente().getNombreCompleto(),
-                    cita.getPaciente().getNombre(),
-                    cita.getFecha(),
-                    cita.getHora()
-            );
-            log.info("Email de notificación enviado al veterinario: {}", cita.getVeterinario().getEmail());
+            if (emailService != null) {
+                emailService.notificarVeterinarioCitaConfirmada(
+                        cita.getVeterinario().getEmail(),
+                        cita.getVeterinario().getNombreCompleto(),
+                        cita.getCliente().getNombreCompleto(),
+                        cita.getPaciente().getNombre(),
+                        cita.getFecha(),
+                        cita.getHora()
+                );
+                log.info("Email de notificación enviado al veterinario: {}", cita.getVeterinario().getEmail());
+            } else {
+                log.warn("EmailService no disponible - no se enviará notificación al veterinario");
+            }
         } catch (Exception e) {
             log.error("Error al enviar email de notificación al veterinario: {}", e.getMessage());
         }
@@ -362,14 +392,18 @@ public class CitaServiceImpl implements CitaService {
 
         // Enviar notificación por email al cliente
         try {
-            emailService.notificarCitaCancelada(
-                    cita.getCliente().getEmail(),
-                    cita.getCliente().getNombreCompleto(),
-                    cita.getPaciente().getNombre(),
-                    cita.getFecha(),
-                    request.getMotivoCancelacion()
-            );
-            log.info("Email de cancelación enviado a: {}", cita.getCliente().getEmail());
+            if (emailService != null) {
+                emailService.notificarCitaCancelada(
+                        cita.getCliente().getEmail(),
+                        cita.getCliente().getNombreCompleto(),
+                        cita.getPaciente().getNombre(),
+                        cita.getFecha(),
+                        request.getMotivoCancelacion()
+                );
+                log.info("Email de cancelación enviado a: {}", cita.getCliente().getEmail());
+            } else {
+                log.warn("EmailService no disponible - no se enviará email de cancelación");
+            }
         } catch (Exception e) {
             log.error("Error al enviar email de cancelación: {}", e.getMessage());
         }
