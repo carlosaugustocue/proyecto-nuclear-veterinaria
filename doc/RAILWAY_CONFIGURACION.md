@@ -107,8 +107,37 @@ Después de agregar las variables:
 
 Tu servicio backend debería tener estas variables configuradas:
 
+### Opción A: Usando Referencias de Railway (Recomendado)
+
 ```
-# Base de datos (desde servicio MySQL)
+# Base de datos (desde servicio MySQL usando referencias)
+MYSQL_URL=${{MySQL.MYSQL_URL}}
+MYSQLHOST=${{MySQL.MYSQLHOST}}
+MYSQLPORT=${{MySQL.MYSQLPORT}}
+MYSQLDATABASE=${{MySQL.MYSQLDATABASE}}
+MYSQLUSER=${{MySQL.MYSQLUSER}}
+MYSQLPASSWORD=${{MySQL.MYSQLPASSWORD}}
+
+# Spring Boot
+SPRING_PROFILES_ACTIVE=prod
+
+# JWT (obligatorio)
+JWT_SECRET=<tu-secret-key>
+
+# Email (opcional)
+EMAIL_HOST=smtp.gmail.com
+EMAIL_PORT=587
+EMAIL_USERNAME=...
+EMAIL_PASSWORD=...
+```
+
+### Opción B: Valores Directos
+
+Si las referencias no funcionan, copia los valores directamente:
+
+```
+# Base de datos (valores directos)
+MYSQL_URL=jdbc:mysql://<host>:3306/<database>?...
 MYSQLHOST=<host-del-mysql>
 MYSQLPORT=3306
 MYSQLDATABASE=railway
@@ -127,6 +156,13 @@ EMAIL_PORT=587
 EMAIL_USERNAME=...
 EMAIL_PASSWORD=...
 ```
+
+**Nota importante:** La aplicación busca variables en este orden de prioridad:
+1. `MYSQL_URL` (si está completo, se usa directamente)
+2. `DB_URL` (variable estándar alternativa)
+3. Variables individuales: `MYSQLHOST`/`MYSQL_HOST`, `MYSQLPORT`/`MYSQL_PORT`, etc.
+
+Si `MYSQL_URL` está configurado y resuelto correctamente por Railway, las otras variables individuales son opcionales.
 
 ## Notas Importantes
 

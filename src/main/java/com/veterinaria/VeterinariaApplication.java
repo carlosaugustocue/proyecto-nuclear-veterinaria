@@ -32,6 +32,9 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 public class VeterinariaApplication {
 
     public static void main(String[] args) {
+        // Configurar propiedades de base de datos antes de que Spring Boot las procese
+        configureDatabaseProperties();
+        
         // Cargar variables de entorno desde archivo .env
         try {
             Dotenv dotenv = Dotenv.configure()
@@ -48,6 +51,9 @@ public class VeterinariaApplication {
                     System.setProperty(key, value);
                 }
             });
+            
+            // Reconfigurar propiedades de base de datos después de cargar .env
+            configureDatabaseProperties();
             
             // Mapear variables específicas de email a propiedades de Spring Boot
             String emailUsername = dotenv.get("EMAIL_USERNAME", System.getProperty("EMAIL_USERNAME"));
@@ -75,5 +81,141 @@ public class VeterinariaApplication {
         }
         
         SpringApplication.run(VeterinariaApplication.class, args);
+    }
+    
+    /**
+     * Configura las propiedades de base de datos resolviendo correctamente las variables de entorno.
+     * Soporta variables de Railway (MYSQL_*) y variables estándar (DB_*).
+     * Railway resuelve las referencias ${{MySQL.*}} antes de que la aplicación las vea.
+     */
+    private static void configureDatabaseProperties() {
+        // Obtener variables de entorno (tienen prioridad sobre propiedades del sistema)
+        // Railway puede usar tanto MYSQL_URL como referencias resueltas
+        String mysqlUrl = getEnvOrProperty("MYSQL_URL");
+        String dbUrl = getEnvOrProperty("DB_URL");
+        
+        // Railway puede usar MYSQLHOST o MYSQL_HOST (con guion bajo)
+        String mysqlHost = getEnvOrProperty("MYSQLHOST");
+        if (mysqlHost == null || mysqlHost.isEmpty() || mysqlHost.startsWith("${")) {
+            mysqlHost = getEnvOrProperty("MYSQL_HOST");
+        }
+        String dbHost = getEnvOrProperty("DB_HOST");
+        
+        // Railway puede usar MYSQLPORT o MYSQL_PORT
+        String mysqlPort = getEnvOrProperty("MYSQLPORT", "3306");
+        if (mysqlPort == null || mysqlPort.isEmpty() || mysqlPort.startsWith("${")) {
+            mysqlPort = getEnvOrProperty("MYSQL_PORT", "3306");
+        }
+        String dbPort = getEnvOrProperty("DB_PORT", "3306");
+        
+        // Railway puede usar MYSQLDATABASE o MYSQL_DATABASE
+        String mysqlDatabase = getEnvOrProperty("MYSQLDATABASE");
+        if (mysqlDatabase == null || mysqlDatabase.isEmpty() || mysqlDatabase.startsWith("${")) {
+            mysqlDatabase = getEnvOrProperty("MYSQL_DATABASE");
+        }
+        String dbName = getEnvOrProperty("DB_NAME");
+        
+        // Railway puede usar MYSQLUSER o MYSQL_USER
+        String mysqlUser = getEnvOrProperty("MYSQLUSER");
+        if (mysqlUser == null || mysqlUser.isEmpty() || mysqlUser.startsWith("${")) {
+            mysqlUser = getEnvOrProperty("MYSQL_USER");
+        }
+        String dbUsername = getEnvOrProperty("DB_USERNAME");
+        
+        // Railway puede usar MYSQLPASSWORD, MYSQL_PASSWORD o MYSQL_ROOT_PASSWORD
+        String mysqlPassword = getEnvOrProperty("MYSQLPASSWORD");
+        if (mysqlPassword == null || mysqlPassword.isEmpty() || mysqlPassword.startsWith("${")) {
+            mysqlPassword = getEnvOrProperty("MYSQL_PASSWORD");
+        }
+        if (mysqlPassword == null || mysqlPassword.isEmpty() || mysqlPassword.startsWith("${")) {
+            mysqlPassword = getEnvOrProperty("MYSQL_ROOT_PASSWORD");
+        }
+        String dbPassword = getEnvOrProperty("DB_PASSWORD");
+        
+        // Construir URL de conexión con prioridad: MYSQL_URL > DB_URL > variables individuales
+        String jdbcUrl = null;
+        
+        if (mysqlUrl != null && !mysqlUrl.isEmpty() && !mysqlUrl.startsWith("${")) {
+            jdbcUrl = mysqlUrl;
+            System.out.println("✓ Usando MYSQL_URL para la conexión a la base de datos");
+            System.out.println("  - URL: " + maskPassword(mysqlUrl));
+        } else if (dbUrl != null && !dbUrl.isEmpty() && !dbUrl.startsWith("${")) {
+            jdbcUrl = dbUrl;
+            System.out.println("✓ Usando DB_URL para la conexión a la base de datos");
+            System.out.println("  - URL: " + maskPassword(dbUrl));
+        } else {
+            // Construir desde variables individuales
+            String host = (mysqlHost != null && !mysqlHost.isEmpty() && !mysqlHost.startsWith("${")) 
+                         ? mysqlHost 
+                         : ((dbHost != null && !dbHost.isEmpty() && !dbHost.startsWith("${")) ? dbHost : "localhost");
+            String port = (mysqlPort != null && !mysqlPort.isEmpty() && !mysqlPort.startsWith("${")) 
+                         ? mysqlPort 
+                         : ((dbPort != null && !dbPort.isEmpty() && !dbPort.startsWith("${")) ? dbPort : "3306");
+            String database = (mysqlDatabase != null && !mysqlDatabase.isEmpty() && !mysqlDatabase.startsWith("${")) 
+                             ? mysqlDatabase 
+                             : ((dbName != null && !dbName.isEmpty() && !dbName.startsWith("${")) ? dbName : "railway");
+            
+            jdbcUrl = String.format(
+                "jdbc:mysql://%s:%s/%s?useUnicode=true&characterEncoding=UTF-8&serverTimezone=UTC&useSSL=false&allowPublicKeyRetrieval=true",
+                host, port, database
+            );
+            System.out.println("✓ Construyendo URL de base de datos desde variables individuales");
+            System.out.println("  - Host: " + host);
+            System.out.println("  - Port: " + port);
+            System.out.println("  - Database: " + database);
+        }
+        
+        // Configurar usuario y contraseña
+        String username = (mysqlUser != null && !mysqlUser.isEmpty() && !mysqlUser.startsWith("${")) 
+                         ? mysqlUser 
+                         : ((dbUsername != null && !dbUsername.isEmpty() && !dbUsername.startsWith("${")) ? dbUsername : "root");
+        String password = (mysqlPassword != null && !mysqlPassword.isEmpty() && !mysqlPassword.startsWith("${")) 
+                         ? mysqlPassword 
+                         : (dbPassword != null && !dbPassword.isEmpty() && !dbPassword.startsWith("${") ? dbPassword : "");
+        
+        System.out.println("✓ Configuración de base de datos:");
+        System.out.println("  - Usuario: " + username);
+        System.out.println("  - Password: " + (password.isEmpty() ? "(vacío)" : "***"));
+        
+        // Establecer propiedades del sistema para que Spring Boot las use
+        if (jdbcUrl != null && System.getProperty("spring.datasource.url") == null) {
+            System.setProperty("spring.datasource.url", jdbcUrl);
+        }
+        if (System.getProperty("spring.datasource.username") == null) {
+            System.setProperty("spring.datasource.username", username);
+        }
+        if (System.getProperty("spring.datasource.password") == null) {
+            System.setProperty("spring.datasource.password", password);
+        }
+    }
+    
+    /**
+     * Obtiene una variable de entorno o propiedad del sistema.
+     * Las variables de entorno tienen prioridad.
+     */
+    private static String getEnvOrProperty(String key) {
+        String value = System.getenv(key);
+        if (value == null || value.isEmpty()) {
+            value = System.getProperty(key);
+        }
+        return value;
+    }
+    
+    /**
+     * Obtiene una variable de entorno o propiedad del sistema con un valor por defecto.
+     */
+    private static String getEnvOrProperty(String key, String defaultValue) {
+        String value = getEnvOrProperty(key);
+        return (value != null && !value.isEmpty()) ? value : defaultValue;
+    }
+    
+    /**
+     * Oculta la contraseña en una URL de conexión para logging seguro.
+     */
+    private static String maskPassword(String url) {
+        if (url == null) return null;
+        // Ocultar contraseña en la URL si está presente
+        return url.replaceAll("password=[^&;]*", "password=***")
+                  .replaceAll(":([^:@/]+)@", ":***@");
     }
 }
