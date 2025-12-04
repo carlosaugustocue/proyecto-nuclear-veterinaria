@@ -34,10 +34,15 @@ public class MailConfig {
 
     /**
      * Crea el bean JavaMailSender solo si EMAIL_HOST está configurado y no está deshabilitado.
-     * La condición verifica que spring.mail.host no sea "disabled" (lo que indica que EMAIL_HOST está configurado).
+     * La condición verifica tanto la variable de entorno EMAIL_HOST como spring.mail.host.
      */
     @Bean
-    @ConditionalOnExpression("'${spring.mail.host:disabled}' != 'disabled'")
+    @ConditionalOnExpression(
+        "(T(java.lang.System).getenv('EMAIL_HOST') != null && " +
+        "!T(java.lang.System).getenv('EMAIL_HOST').trim().isEmpty() && " +
+        "!T(java.lang.System).getenv('EMAIL_HOST').equals('disabled')) || " +
+        "'${spring.mail.host:disabled}' != 'disabled'"
+    )
     public JavaMailSender javaMailSender() {
         // Verificar que EMAIL_HOST esté configurado (prioridad: variable de entorno > propiedad del sistema > propiedad de Spring)
         String emailHost = System.getenv("EMAIL_HOST");

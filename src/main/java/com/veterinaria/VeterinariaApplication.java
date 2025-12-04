@@ -56,24 +56,53 @@ public class VeterinariaApplication {
             configureDatabaseProperties();
             
             // Mapear variables específicas de email a propiedades de Spring Boot
-            String emailUsername = dotenv.get("EMAIL_USERNAME", System.getProperty("EMAIL_USERNAME"));
-            String emailPassword = dotenv.get("EMAIL_PASSWORD", System.getProperty("EMAIL_PASSWORD"));
-            String emailFrom = dotenv.get("EMAIL_FROM", System.getProperty("EMAIL_FROM"));
+            // Primero verificar variables de entorno del sistema (Railway las proporciona directamente)
+            String emailHost = System.getenv("EMAIL_HOST");
+            if (emailHost == null || emailHost.trim().isEmpty()) {
+                emailHost = dotenv.get("EMAIL_HOST");
+            }
+            if (emailHost == null || emailHost.trim().isEmpty()) {
+                emailHost = System.getProperty("EMAIL_HOST");
+            }
             
-            if (emailUsername != null && System.getProperty("spring.mail.username") == null) {
+            String emailUsername = System.getenv("EMAIL_USERNAME");
+            if (emailUsername == null || emailUsername.trim().isEmpty()) {
+                emailUsername = dotenv.get("EMAIL_USERNAME", System.getProperty("EMAIL_USERNAME"));
+            }
+            
+            String emailPassword = System.getenv("EMAIL_PASSWORD");
+            if (emailPassword == null || emailPassword.trim().isEmpty()) {
+                emailPassword = dotenv.get("EMAIL_PASSWORD", System.getProperty("EMAIL_PASSWORD"));
+            }
+            
+            String emailFrom = System.getenv("EMAIL_FROM");
+            if (emailFrom == null || emailFrom.trim().isEmpty()) {
+                emailFrom = dotenv.get("EMAIL_FROM", System.getProperty("EMAIL_FROM"));
+            }
+            
+            // Mapear EMAIL_HOST a spring.mail.host si está configurado
+            if (emailHost != null && !emailHost.trim().isEmpty() && !"disabled".equals(emailHost)) {
+                System.setProperty("spring.mail.host", emailHost);
+                System.out.println("✓ EMAIL_HOST configurado: " + emailHost);
+            }
+            
+            if (emailUsername != null && !emailUsername.trim().isEmpty() && System.getProperty("spring.mail.username") == null) {
                 System.setProperty("spring.mail.username", emailUsername);
             }
-            if (emailPassword != null && System.getProperty("spring.mail.password") == null) {
+            if (emailPassword != null && !emailPassword.trim().isEmpty() && System.getProperty("spring.mail.password") == null) {
                 System.setProperty("spring.mail.password", emailPassword);
             }
-            if (emailFrom != null && System.getProperty("app.email.from") == null) {
+            if (emailFrom != null && !emailFrom.trim().isEmpty() && System.getProperty("app.email.from") == null) {
                 System.setProperty("app.email.from", emailFrom);
             }
             
             System.out.println("✓ Variables de entorno cargadas desde .env");
-            if (emailUsername != null) {
+            if (emailHost != null && !emailHost.trim().isEmpty()) {
+                System.out.println("  - EMAIL_HOST: " + emailHost);
+            }
+            if (emailUsername != null && !emailUsername.trim().isEmpty()) {
                 System.out.println("  - EMAIL_USERNAME: " + emailUsername);
-                System.out.println("  - EMAIL_FROM: " + (emailFrom != null ? emailFrom : emailUsername));
+                System.out.println("  - EMAIL_FROM: " + (emailFrom != null && !emailFrom.trim().isEmpty() ? emailFrom : emailUsername));
             }
         } catch (Exception e) {
             System.err.println("⚠️ Advertencia: No se pudo cargar el archivo .env: " + e.getMessage());
