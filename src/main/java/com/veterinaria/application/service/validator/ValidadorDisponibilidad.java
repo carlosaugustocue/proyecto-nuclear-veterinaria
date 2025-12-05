@@ -36,8 +36,11 @@ public class ValidadorDisponibilidad {
     @Value("${app.horario.cierre:18:00}")
     private String horarioCierre;
 
-    @Value("${app.horario.duracion-minima-cita:15}")
+    @Value("${app.horario.duracion-minima-cita:30}")
     private Integer duracionMinimaCita;
+    
+    @Value("${app.horario.intervalo-horarios:30}")
+    private Integer intervaloHorarios;
 
     /**
      * Verifica la disponibilidad completa del veterinario en una fecha y hora
@@ -182,7 +185,8 @@ public class ValidadorDisponibilidad {
         // Obtener todas las citas del veterinario en esa fecha
         List<Cita> citasDelDia = citaRepository.findCitasActivasByVeterinarioAndFecha(veterinario, fecha);
 
-        // Generar slots de tiempo cada 15 minutos (configurable)
+        // Generar slots de tiempo cada 30 minutos (configurable mediante intervaloHorarios)
+        // Esto asegura que las citas se muestren en intervalos estándar de 30 minutos
         LocalTime apertura = LocalTime.parse(horarioApertura);
         LocalTime cierre = LocalTime.parse(horarioCierre);
         LocalTime horaActual = apertura;
@@ -199,7 +203,8 @@ public class ValidadorDisponibilidad {
                 horariosDisponibles.add(horaActual.toString());
             }
 
-            horaActual = horaActual.plusMinutes(duracionMinimaCita);
+            // Avanzar según el intervalo configurado (30 minutos por defecto)
+            horaActual = horaActual.plusMinutes(intervaloHorarios);
         }
 
         return horariosDisponibles;
